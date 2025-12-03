@@ -27,13 +27,11 @@ class _LoginPageState extends State<LoginPage> {
         throw "Preencha email e senha.";
       }
 
-      // LOGIN Supabase
       await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      // Se login deu certo → navegar
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -52,57 +50,92 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                "BuddyTech",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 40),
-
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // ------------ LOGO ------------
+                SizedBox(
+                  height: 140,
+                  width: 140,
+                  child: Image.asset("assets/logo.png"),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Senha",
-                  border: OutlineInputBorder(),
+                const Text(
+                  "BuddyTech",
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0A66FF),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 40),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: loading ? null : login,
-                  child: loading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Entrar"),
+                // ------------ EMAIL ------------
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    labelText: "Email",
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              TextButton(
-                onPressed: () {},
-                child: const Text("Esqueci minha senha"),
-              ),
-            ],
+                // ------------ SENHA ------------
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: "Senha",
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                // ------------ BOTÃO LOGIN ------------
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0A66FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: loading ? null : login,
+                    child: loading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Entrar", style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // ------------ ESQUECI A SENHA ------------
+                TextButton(
+                  onPressed: () {},
+                  child: const Text("Esqueci minha senha"),
+                ),
+              ],
+            ),
           ),
         ),
       ),
