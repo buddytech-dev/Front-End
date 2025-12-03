@@ -15,7 +15,7 @@ version: 1.0.0+1
 #   Versão do SDK Dart/Flutter suportado
 # -------------------------------------------
 environment:
-  sdk: ^3.9.2
+  sdk: ">=3.9.2 <4.0.0"
 
 # -------------------------------------------
 #          DEPENDÊNCIAS DO APP
