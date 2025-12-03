@@ -56,7 +56,8 @@ flutter:
   # -----------------------------------------
   assets:
     - assets/
-    - .env
+    - assets/logo.png
+    - assets/.env
 
   # -----------------------------------------
   #  (Opcional) Configurar fontes personalizadas
