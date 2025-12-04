@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/login_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _selectedNavIndex = 0;
 
   Future<void> logout(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
@@ -21,13 +28,13 @@ class HomePage extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          //  NAVBAR 
+          // NAVBAR
           _buildNavbar(context),
 
-          //  CONTEÚDO PRINCIPAL 
+          // CONTEÚDO PRINCIPAL
           Expanded(
             child: SingleChildScrollView(
-              child: _buildHeroSection(context),
+              child: _buildMainContent(context),
             ),
           ),
         ],
@@ -38,15 +45,12 @@ class HomePage extends StatelessWidget {
   Widget _buildNavbar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
       ),
       child: Row(
         children: [
@@ -54,17 +58,17 @@ class HomePage extends StatelessWidget {
           Row(
             children: [
               Image.asset(
-                'assets/logo.png',
-                height: 32,
-                width: 32,
+                'assets/Logo.png',
+                height: 36,
+                width: 36,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               const Text(
                 'BuddyTech',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -75,30 +79,17 @@ class HomePage extends StatelessWidget {
           // Menu de navegação
           Row(
             children: [
-              _navItem('Home', isActive: true),
-              const SizedBox(width: 32),
-              _navItem('Lead Score'),
-              const SizedBox(width: 32),
-              _navItem('Ações Sugeridas'),
-              const SizedBox(width: 32),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0A66FF),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text(
-                  'Dashboard',
-                  style: TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ),
+              _navItem('Home', 0),
               const SizedBox(width: 16),
+              _navItem('Ações', 1),
+              const SizedBox(width: 16),
+              _navItem('Ranking', 2),
+              const SizedBox(width: 16),
+              _navItem('Perfil', 3),
+              const SizedBox(width: 24),
+              // Botão de logout
               IconButton(
-                icon: const Icon(Icons.logout, color: Colors.black54),
+                icon: const Icon(Icons.logout, color: Colors.white),
                 onPressed: () => logout(context),
                 tooltip: 'Sair',
               ),
@@ -109,145 +100,294 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _navItem(String text, {bool isActive = false}) {
-    return TextButton(
-      onPressed: () {},
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 15,
-          color: isActive ? const Color(0xFF0A66FF) : Colors.black54,
-          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+  Widget _navItem(String text, int index) {
+    final isActive = _selectedNavIndex == index;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedNavIndex = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(25),
+          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 15,
+            color: isActive ? const Color(0xFF2563EB) : Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildHeroSection(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    
- 
-    const double maxContentWidth = 1200;
-    
-    return Center(
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: maxContentWidth),
-        padding: EdgeInsets.symmetric(
-          horizontal: screenWidth > 1200 ? 40 : 80,
-          vertical: 100,
+  Widget _buildMainContent(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 900),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Cabeçalho de boas-vindas
+              _buildWelcomeHeader(),
+
+              const SizedBox(height: 32),
+
+              // Lista de leads
+              _buildLeadsList(),
+            ],
+          ),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Lado esquerdo - Texto e botões
-            Expanded(
-              flex: 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Label
-                  const Text(
-                    'Label goes here',
+      ),
+    );
+  }
+
+  Widget _buildWelcomeHeader() {
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text(
+            'Olá Fulano',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'confira seus principais clientes de hoje',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeadsList() {
+    // Dados mockados dos leads
+    final leads = [
+      LeadData(
+        rank: 1,
+        rankColor: const Color(0xFF3B82F6),
+        companyName: 'Teste1',
+        companyEmail: 'contato@teste1.com',
+        contactName: 'Beltrano da Silva',
+        contactPhone: '+55 11 99999-7777',
+        logoColor: const Color(0xFF3B82F6),
+        logoIcon: Icons.water_drop,
+        status: 'Quente - Alta probabilidade',
+        lastInteraction: '15/04/2024',
+      ),
+      LeadData(
+        rank: 2,
+        rankColor: const Color(0xFF3B82F6),
+        companyName: 'Teste2',
+        companyEmail: 'contato@teste2.com',
+        contactName: 'Ana Costa',
+        contactPhone: '+55 11 98888-5555',
+        logoColor: const Color(0xFFFFC107),
+        logoIcon: Icons.settings,
+        status: 'Morno - Alta probabilidade',
+        lastInteraction: '22/03/2024',
+      ),
+      LeadData(
+        rank: 3,
+        rankColor: const Color(0xFF3B82F6),
+        companyName: 'Teste3',
+        companyEmail: 'contato@ambertech.com',
+        contactName: 'Paula Cardoso',
+        contactPhone: '+55 11 92222-1111',
+        logoColor: const Color(0xFFFFC107),
+        logoIcon: Icons.square_rounded,
+        status: 'Morno - Alta estabilidade',
+        lastInteraction: '05/02/2024',
+      ),
+    ];
+
+    return Column(
+      children: leads.map((lead) => _buildLeadCard(lead)).toList(),
+    );
+  }
+
+  Widget _buildLeadCard(LeadData lead) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Logo da empresa
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: lead.logoColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              lead.logoIcon,
+              color: Colors.white,
+              size: 32,
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          // Informações da empresa e contato
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lead.companyName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  lead.companyEmail,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  lead.contactName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  lead.contactPhone,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Status e última interação
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lead.status,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Última interação: ${lead.lastInteraction}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {
+                    // Ação futura para detalhes do cliente
+                  },
+                  child: const Text(
+                    'Detalhes do cliente',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF0A66FF),
+                      fontSize: 13,
+                      color: Color(0xFF3B82F6),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Título principal
-                  const Text(
-                    'Bem-vindo ao AI\nSales Buddy',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF0A66FF),
-                      height: 1.2,
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Subtítulo
-                  Text(
-                    'Seu painel de priorização de oportunidades',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Botões
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0A66FF),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                        child: const Text(
-                          'Simular E-mails',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.black87,
-                          side: const BorderSide(color: Colors.black26),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                        ),
-                        child: const Text(
-                          'Simular Reuniões',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 60),
-
-            // Lado direito - Placeholder de imagem
-            Expanded(
-              flex: 1,
-              child: Container(
-                height: 350,
-                constraints: const BoxConstraints(maxWidth: 500),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F0FE),
-                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.image,
-                    size: 80,
-                    color: Colors.grey.shade400,
-                  ),
+              ],
+            ),
+          ),
+
+          // Ranking badge
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: lead.rankColor,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                '#${lead.rank}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class LeadData {
+  final int rank;
+  final Color rankColor;
+  final String companyName;
+  final String companyEmail;
+  final String contactName;
+  final String contactPhone;
+  final Color logoColor;
+  final IconData logoIcon;
+  final String status;
+  final String lastInteraction;
+
+  LeadData({
+    required this.rank,
+    required this.rankColor,
+    required this.companyName,
+    required this.companyEmail,
+    required this.contactName,
+    required this.contactPhone,
+    required this.logoColor,
+    required this.logoIcon,
+    required this.status,
+    required this.lastInteraction,
+  });
 }
