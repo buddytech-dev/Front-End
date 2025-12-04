@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/login_page.dart';
+import '../pages/client_details_page.dart';
+import '../models/client_model.dart';
+import '../services/client_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,6 +14,36 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedNavIndex = 0;
+  final ClientService _clientService = ClientService();
+  List<ClientModel> _clients = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClients();
+  }
+
+  Future<void> _loadClients() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final clients = await _clientService.getClients();
+      setState(() {
+        _clients = clients;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Erro ao carregar clientes: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   Future<void> logout(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
@@ -181,52 +214,59 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildLeadsList() {
-    // Dados mockados dos leads
-    final leads = [
-      LeadData(
-        rank: 1,
-        rankColor: const Color(0xFF3B82F6),
-        companyName: 'Teste1',
-        companyEmail: 'contato@teste1.com',
-        contactName: 'Beltrano da Silva',
-        contactPhone: '+55 11 99999-7777',
-        logoColor: const Color(0xFF3B82F6),
-        logoIcon: Icons.water_drop,
-        status: 'Quente - Alta probabilidade',
-        lastInteraction: '15/04/2024',
-      ),
-      LeadData(
-        rank: 2,
-        rankColor: const Color(0xFF3B82F6),
-        companyName: 'Teste2',
-        companyEmail: 'contato@teste2.com',
-        contactName: 'Ana Costa',
-        contactPhone: '+55 11 98888-5555',
-        logoColor: const Color(0xFFFFC107),
-        logoIcon: Icons.settings,
-        status: 'Morno - Alta probabilidade',
-        lastInteraction: '22/03/2024',
-      ),
-      LeadData(
-        rank: 3,
-        rankColor: const Color(0xFF3B82F6),
-        companyName: 'Teste3',
-        companyEmail: 'contato@ambertech.com',
-        contactName: 'Paula Cardoso',
-        contactPhone: '+55 11 92222-1111',
-        logoColor: const Color(0xFFFFC107),
-        logoIcon: Icons.square_rounded,
-        status: 'Morno - Alta estabilidade',
-        lastInteraction: '05/02/2024',
-      ),
-    ];
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: CircularProgressIndicator(
+            color: Color(0xFF3B82F6),
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                style: TextStyle(color: Colors.red.shade600),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadClients,
+                child: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_clients.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Text(
+            'Nenhum cliente encontrado',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
 
     return Column(
-      children: leads.map((lead) => _buildLeadCard(lead)).toList(),
+      children: _clients.map((client) => _buildLeadCard(client)).toList(),
     );
   }
 
-  Widget _buildLeadCard(LeadData lead) {
+  Widget _buildLeadCard(ClientModel client) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(24),
@@ -249,14 +289,27 @@ class _HomePageState extends State<HomePage> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: lead.logoColor,
+              color: client.logoColor,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              lead.logoIcon,
-              color: Colors.white,
-              size: 32,
-            ),
+            child: client.logoUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      client.logoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        client.logoIcon,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                    ),
+                  )
+                : Icon(
+                    client.logoIcon,
+                    color: Colors.white,
+                    size: 32,
+                  ),
           ),
 
           const SizedBox(width: 16),
@@ -268,7 +321,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lead.companyName,
+                  client.companyName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -277,7 +330,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  lead.companyEmail,
+                  client.companyEmail,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade500,
@@ -285,14 +338,14 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  lead.contactName,
+                  client.contactName,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
                   ),
                 ),
                 Text(
-                  lead.contactPhone,
+                  client.contactPhone,
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade500,
@@ -309,7 +362,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  lead.status,
+                  client.status,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
@@ -317,7 +370,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Última interação: ${lead.lastInteraction}',
+                  'Última interação: ${client.lastInteraction}',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey.shade500,
@@ -326,7 +379,24 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 12),
                 GestureDetector(
                   onTap: () {
-                    // Ação futura para detalhes do cliente
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClientDetailsPage(
+                          companyName: client.companyName,
+                          companyEmail: client.companyEmail,
+                          contactName: client.contactName,
+                          contactPhone: client.contactPhone,
+                          status: client.status,
+                          lastInteraction: client.lastInteraction,
+                          rank: client.rank,
+                          logoColor: client.logoColor,
+                          logoIcon: client.logoIcon,
+                          aiSummary: client.aiSummary,
+                          recommendedActions: client.recommendedActions,
+                        ),
+                      ),
+                    );
                   },
                   child: const Text(
                     'Detalhes do cliente',
@@ -346,12 +416,12 @@ class _HomePageState extends State<HomePage> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: lead.rankColor,
+              color: client.rankColor,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
-                '#${lead.rank}',
+                '#${client.rank}',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -364,30 +434,4 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-}
-
-class LeadData {
-  final int rank;
-  final Color rankColor;
-  final String companyName;
-  final String companyEmail;
-  final String contactName;
-  final String contactPhone;
-  final Color logoColor;
-  final IconData logoIcon;
-  final String status;
-  final String lastInteraction;
-
-  LeadData({
-    required this.rank,
-    required this.rankColor,
-    required this.companyName,
-    required this.companyEmail,
-    required this.contactName,
-    required this.contactPhone,
-    required this.logoColor,
-    required this.logoIcon,
-    required this.status,
-    required this.lastInteraction,
-  });
 }
