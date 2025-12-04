@@ -33,6 +33,9 @@ dependencies:
   # Permite usar arquivo .env com chaves privadas (SUPABASE_URL / SUPABASE_KEY)
   flutter_dotenv: ^6.0.0
 
+  # File picker para selecionar imagens
+  file_picker: ^8.0.0
+
 # -------------------------------------------
 #       DEPENDÊNCIAS DE DESENVOLVIMENTO
 # -------------------------------------------

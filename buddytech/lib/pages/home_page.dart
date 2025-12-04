@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../pages/login_page.dart';
 import '../pages/client_details_page.dart';
+import '../pages/profile_page.dart';
 import '../models/client_model.dart';
 import '../services/client_service.dart';
 
@@ -137,9 +138,17 @@ class _HomePageState extends State<HomePage> {
     final isActive = _selectedNavIndex == index;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedNavIndex = index;
-        });
+        if (index == 3) {
+          // Navegar para a página de perfil
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfilePage()),
+          );
+        } else {
+          setState(() {
+            _selectedNavIndex = index;
+          });
+        }
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
