@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../config/app_colors.dart';
-import '../config/theme.dart';
+//import '../config/theme.dart';
 
 /// Página de perfil do usuário
 /// Exibe o email do usuário logado e permite logout

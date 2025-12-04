@@ -1,13 +1,24 @@
 // ============================================================================
 // ranking_page.dart
-// Tela de Ranking utilizando widgets customizados para Top Users e Pódio
+// Página de Ranking gamificado - BuddyTech
 // ============================================================================
+//
+// Responsável por:
+//  • Exibir o ranking dos usuários (top 3 em destaque + lista)
+//  • Apresentar abas (filtros) e o pódio visual
+//  • Servir como template: os dados atualmente são mock/placeholders
+//
+// Observações:
+//  • Importa as cores do AppColors (lib/config/app_colors.dart).
+//  • Widgets privados (_TopUser e _PodiumBox) estão no mesmo arquivo.
+//  • Tradução/documentação em português.
+// ============================================================================
+
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
-import '../config/theme.dart';
-import '../widgets/ranking_top_user.dart';
-import '../widgets/ranking_podium_box.dart';
 
+/// Página principal do ranking.
+/// Mostra: AppBar customizada, abas, top 3 com avatar circular, pódio visual e lista de posições.
 class RankingPage extends StatelessWidget {
   const RankingPage({super.key});
 
@@ -15,6 +26,9 @@ class RankingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = AppColors.primary;
     final bg = AppColors.background;
+    final surface = AppColors.surface;
+    final textPrimary = AppColors.textPrimary;
+    final textSecondary = AppColors.textSecondary;
 
     return Scaffold(
       backgroundColor: bg,
@@ -44,15 +58,13 @@ class RankingPage extends StatelessWidget {
           children: [
             const SizedBox(height: 20),
 
-            // ---------------------------
-            //  ABAS (Label1, Label2, Label3)
-            // ---------------------------
-            Container(
+            // ---------- ABAS (filtros) ----------
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
                 height: 44,
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(.2),
+                  color: primary.withOpacity(.12),
                   borderRadius: BorderRadius.circular(50),
                 ),
                 child: Row(
@@ -67,42 +79,36 @@ class RankingPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // ---------------------------
-            //  Top 3 Circular Photos
-            // ---------------------------
+            // ---------- TOP 3 (circulares) ----------
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: const [
-                RankingTopUser(position: 2, points: 8999, highlighted: false),
-                RankingTopUser(position: 1, points: 9999, highlighted: true),
-                RankingTopUser(position: 3, points: 7999, highlighted: false),
+                _TopUser(position: 2, points: 8999, highlighted: false),
+                _TopUser(position: 1, points: 9999, highlighted: true),
+                _TopUser(position: 3, points: 7999, highlighted: false),
               ],
             ),
 
             const SizedBox(height: 24),
 
-            // ---------------------------
-            //  Podium
-            // ---------------------------
+            // ---------- PÓDIO ----------
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 26),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: const [
-                  RankingPodiumBox(position: 2, isSelected: false),
+                  _PodiumBox(label: "2°", height: 120),
                   SizedBox(width: 10),
-                  RankingPodiumBox(position: 1, isSelected: true),
+                  _PodiumBox(label: "1°", height: 155),
                   SizedBox(width: 10),
-                  RankingPodiumBox(position: 3, isSelected: false),
+                  _PodiumBox(label: "3°", height: 100),
                 ],
               ),
             ),
 
             const SizedBox(height: 32),
 
-            // ---------------------------
-            //  Lista completa
-            // ---------------------------
+            // ---------- LISTA COMPLETA ----------
             Container(
               width: double.infinity,
               margin: const EdgeInsets.symmetric(horizontal: 18),
@@ -114,19 +120,19 @@ class RankingPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Cabeçalho
+                  // Cabeçalho da tabela
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 6,
                     ),
                     child: Row(
-                      children: const [
+                      children: [
                         Expanded(
                           flex: 2,
                           child: Text(
                             "Colocação",
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -136,7 +142,7 @@ class RankingPage extends StatelessWidget {
                           flex: 4,
                           child: Text(
                             "Nome do Usuário",
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -147,7 +153,7 @@ class RankingPage extends StatelessWidget {
                           child: Text(
                             "Pontos",
                             textAlign: TextAlign.end,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -159,7 +165,7 @@ class RankingPage extends StatelessWidget {
 
                   Divider(color: Colors.white.withOpacity(.4)),
 
-                  // Mock list
+                  // Linhas mock (4° ao 9°)
                   ...List.generate(6, (i) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(
@@ -195,7 +201,7 @@ class RankingPage extends StatelessWidget {
                           Expanded(
                             flex: 2,
                             child: Text(
-                              "${1000 - i * 100}",
+                              "${(1000 - i * 100)}",
                               textAlign: TextAlign.end,
                               style: const TextStyle(color: Colors.white),
                             ),
@@ -215,6 +221,7 @@ class RankingPage extends StatelessWidget {
     );
   }
 
+  // Aba individual (botão estilizado)
   Widget _buildTab(String text, bool active) {
     return Expanded(
       child: Container(
@@ -228,8 +235,96 @@ class RankingPage extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            color: active ? Colors.white : AppColors.primary,
+            color: active ? AppColors.surface : AppColors.primary,
             fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget privado que representa um dos top users (1°, 2° ou 3°).
+/// - [position]: posição do usuário (1,2,3)
+/// - [points]: pontos do usuário
+/// - [highlighted]: quando true, mostra ícone de troféu e estilo em destaque
+class _TopUser extends StatelessWidget {
+  final int position;
+  final int points;
+  final bool highlighted;
+
+  const _TopUser({
+    super.key,
+    required this.position,
+    required this.points,
+    required this.highlighted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (highlighted)
+          const Icon(Icons.emoji_events, color: Colors.orange, size: 28),
+
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: highlighted ? Colors.orange : AppColors.primary,
+              width: highlighted ? 2.5 : 1.5,
+            ),
+            color: AppColors.surface, // fundo branco do círculo
+          ),
+          child: Icon(Icons.person, size: 40, color: AppColors.primary),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Nome (placeholder)
+        Text(
+          "Nome do Usuário",
+          style: TextStyle(
+            fontWeight: highlighted ? FontWeight.bold : FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+
+        // Pontuação
+        Text(
+          "$points Pts",
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+        ),
+      ],
+    );
+  }
+}
+
+/// Caixa do pódio (1°, 2°, 3°)
+class _PodiumBox extends StatelessWidget {
+  final String label;
+  final double height;
+
+  const _PodiumBox({super.key, required this.label, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        height: height,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.surface,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),

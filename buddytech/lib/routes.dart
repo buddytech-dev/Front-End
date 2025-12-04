@@ -10,7 +10,6 @@
 //  • Evitar erros por strings repetidas ou digitadas errado
 //  • Facilitar manutenção de novas telas no futuro
 //
-// As rotas definidas aqui são utilizadas no main.dart dentro do onGenerateRoute.
 // ============================================================================
 
 class AppRoutes {
@@ -18,6 +17,11 @@ class AppRoutes {
   // Rota inicial (Gateway de autenticação)
   // ----------------------------
   static const String root = '/';
+
+  // ----------------------------
+  // SHELL PRINCIPAL (Navegação com Navbar fixa)
+  // ----------------------------
+  static const String shell = '/shell';
 
   // ----------------------------
   // TELAS PRINCIPAIS
@@ -59,4 +63,9 @@ class AppRoutes {
   // AÇÕES CONCLUÍDAS (Histórico)
   // ----------------------------
   static const String completedActions = '/completed-actions';
+
+  // ----------------------------
+  // (Opcional) Tela de erro 404 personalizada
+  // ----------------------------
+  static const String notFound = '/not-found';
 }

@@ -60,11 +60,3 @@ flutter:
     - assets/.env
 
   # -----------------------------------------
-  #  (Opcional) Configurar fontes personalizadas
-  # -----------------------------------------
-  # fonts:
-  #   - family: Poppins
-  #     fonts:
-  #       - asset: assets/fonts/Poppins-Regular.ttf
-  #       - asset: assets/fonts/Poppins-Bold.ttf
-  #         weight: 700
