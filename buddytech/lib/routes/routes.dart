@@ -9,6 +9,7 @@ import '../pages/admin_dashboard_page.dart';
 import '../pages/admin_users_page.dart';
 import '../pages/admin_accounts_page.dart';
 import '../pages/admin_leads_page.dart';
+import '../pages/recover_password_page.dart';
 import '../models/client_model.dart';
 
 /// Argumentos para navegação à página de detalhes do cliente
@@ -25,7 +26,7 @@ class ClientDetailsArgs {
   final String logoUrl;
   final String aiSummary;
   final List<String> recommendedActions;
-  
+
   // Campos extras da Lead
   final String? title;
   final String? description;
@@ -36,7 +37,7 @@ class ClientDetailsArgs {
   final String? nextStepSuggestion;
   final String? suggestedContactType;
   final int? interactionsCount;
-  
+
   // Dados da empresa
   final String? companyCNPJ;
   final String? companyLocation;
@@ -106,14 +107,15 @@ class AppRoutes {
 
   // Autenticação
   static const String login = '/login';
-  
+  static const String recoverPassword = '/recover-password';
+
   // Área do vendedor
   static const String home = '/home';
   static const String profile = '/profile';
   static const String history = '/history';
   static const String clientDetails = '/client-details';
   static const String sellerDashboard = '/seller-dashboard';
-  
+
   // Área administrativa
   static const String adminDashboard = '/admin';
   static const String adminUsers = '/admin/users';
@@ -131,16 +133,19 @@ class AppRouter {
       case AppRoutes.login:
         return _buildRoute(const LoginPage(), settings);
 
+      case AppRoutes.recoverPassword:
+        return _buildRoute(const RecoverPasswordPage(), settings);
+
       // ========== ÁREA DO VENDEDOR ==========
       case AppRoutes.home:
         return _buildRoute(const HomePage(), settings);
-        
+
       case AppRoutes.profile:
         return _buildRoute(const ProfilePage(), settings);
-        
+
       case AppRoutes.history:
         return _buildRoute(const HistoryPage(), settings);
-        
+
       case AppRoutes.sellerDashboard:
         return _buildRoute(const SellerDashboardPage(), settings);
 
@@ -179,13 +184,13 @@ class AppRouter {
       // ========== ÁREA ADMINISTRATIVA ==========
       case AppRoutes.adminDashboard:
         return _buildRoute(const AdminDashboardPage(), settings);
-        
+
       case AppRoutes.adminUsers:
         return _buildRoute(const AdminUsersPage(), settings);
-        
+
       case AppRoutes.adminAccounts:
         return _buildRoute(const AdminAccountsPage(), settings);
-        
+
       case AppRoutes.adminLeads:
         return _buildRoute(const AdminLeadsPage(), settings);
 
@@ -193,9 +198,7 @@ class AppRouter {
       default:
         return _buildRoute(
           Scaffold(
-            body: Center(
-              child: Text('Rota não encontrada: ${settings.name}'),
-            ),
+            body: Center(child: Text('Rota não encontrada: ${settings.name}')),
           ),
           settings,
         );
@@ -204,9 +207,6 @@ class AppRouter {
 
   /// Cria uma rota com animação padrão
   static MaterialPageRoute _buildRoute(Widget page, RouteSettings settings) {
-    return MaterialPageRoute(
-      builder: (_) => page,
-      settings: settings,
-    );
+    return MaterialPageRoute(builder: (_) => page, settings: settings);
   }
 }
