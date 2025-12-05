@@ -222,14 +222,19 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
             CircleAvatar(
               radius: 22,
               backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              child: Text(
-                (seller.name ?? 'U')[0].toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-              ),
+              backgroundImage: seller.photoUrl != null && seller.photoUrl!.isNotEmpty
+                  ? NetworkImage(seller.photoUrl!)
+                  : null,
+              child: seller.photoUrl == null || seller.photoUrl!.isEmpty
+                  ? Text(
+                      (seller.name ?? 'U')[0].toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -351,18 +356,23 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
   Widget _buildDesktopCardContent(SellerDto seller, String roleText, Color roleColor) {
     return Row(
       children: [
-        // Avatar
+        // Avatar com foto ou inicial
         CircleAvatar(
           radius: 28,
           backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-          child: Text(
-            (seller.name ?? 'U')[0].toUpperCase(),
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
-          ),
+          backgroundImage: seller.photoUrl != null && seller.photoUrl!.isNotEmpty
+              ? NetworkImage(seller.photoUrl!)
+              : null,
+          child: seller.photoUrl == null || seller.photoUrl!.isEmpty
+              ? Text(
+                  (seller.name ?? 'U')[0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                )
+              : null,
         ),
         const SizedBox(width: 16),
 
@@ -469,6 +479,8 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         return 'Admin';
       case 2:
         return 'Vendedor';
+      case 3:
+        return 'Gerente';
       default:
         return 'Sem função';
     }
@@ -480,6 +492,8 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         return Colors.purple;
       case 2:
         return Colors.green;
+      case 3:
+        return Colors.blue;
       default:
         return Colors.grey;
     }
@@ -491,6 +505,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     final emailController = TextEditingController(text: seller?.email ?? '');
     final passwordController = TextEditingController(text: seller?.password ?? '');
     final phoneController = TextEditingController(text: seller?.phoneNumber ?? '');
+    final photoUrlController = TextEditingController(text: seller?.photoUrl ?? '');
     int selectedRole = seller?.role ?? 2; // Default: Vendedor
     bool isLoading = false;
     bool showPassword = false;
@@ -527,6 +542,53 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Avatar/Foto de perfil preview
+                      Center(
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: AppColors.primary.withOpacity(0.1),
+                              backgroundImage: photoUrlController.text.isNotEmpty
+                                  ? NetworkImage(photoUrlController.text)
+                                  : null,
+                              child: photoUrlController.text.isEmpty
+                                  ? Icon(
+                                      Icons.person,
+                                      size: 40,
+                                      color: AppColors.primary,
+                                    )
+                                  : null,
+                            ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: CircleAvatar(
+                                radius: 14,
+                                backgroundColor: AppColors.primary,
+                                child: IconButton(
+                                  padding: EdgeInsets.zero,
+                                  icon: const Icon(
+                                    Icons.camera_alt,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    // Abre diálogo para inserir URL da foto
+                                    _showPhotoUrlDialog(
+                                      context,
+                                      photoUrlController,
+                                      setDialogState,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       // Nome
                       TextField(
                         controller: nameController,
@@ -596,6 +658,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                           DropdownMenuItem(value: 0, child: Text('Sem função')),
                           DropdownMenuItem(value: 1, child: Text('Administrador')),
                           DropdownMenuItem(value: 2, child: Text('Vendedor')),
+                          DropdownMenuItem(value: 3, child: Text('Gerente')),
                         ],
                         onChanged: (value) {
                           setDialogState(() {
@@ -668,6 +731,9 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
                                   : null,
                               role: selectedRole,
                               currentPoints: 0, // Pontos padrão = 0
+                              photoUrl: photoUrlController.text.isNotEmpty
+                                  ? photoUrlController.text.trim()
+                                  : null,
                             );
 
                             ApiResponse response;
@@ -798,6 +864,126 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
         content: Text(message),
         backgroundColor: isError ? Colors.red : Colors.green,
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Diálogo para inserir URL da foto de perfil
+  void _showPhotoUrlDialog(
+    BuildContext context,
+    TextEditingController photoUrlController,
+    void Function(void Function()) setDialogState,
+  ) {
+    final tempController = TextEditingController(text: photoUrlController.text);
+    final isMobile = Responsive.isMobile(context);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 24 : 40,
+          vertical: 24,
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.image, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Foto de Perfil'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Preview da imagem
+            Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: tempController.text.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        tempController.text,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                              SizedBox(height: 8),
+                              Text('URL inválida', style: TextStyle(color: Colors.grey)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_photo_alternate, size: 40, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text('Nenhuma imagem', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: tempController,
+              decoration: const InputDecoration(
+                labelText: 'URL da imagem',
+                hintText: 'https://exemplo.com/foto.jpg',
+                prefixIcon: Icon(Icons.link),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                // Atualiza o preview
+                (context as Element).markNeedsBuild();
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Cole a URL de uma imagem hospedada na internet.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          if (tempController.text.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                tempController.clear();
+                photoUrlController.clear();
+                setDialogState(() {});
+                Navigator.pop(context);
+              },
+              child: const Text('Remover', style: TextStyle(color: Colors.red)),
+            ),
+          ElevatedButton(
+            onPressed: () {
+              photoUrlController.text = tempController.text;
+              setDialogState(() {});
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Salvar'),
+          ),
+        ],
       ),
     );
   }

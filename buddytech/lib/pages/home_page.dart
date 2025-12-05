@@ -23,12 +23,31 @@ class _HomePageState extends State<HomePage> {
   String? _error;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isAdmin = false;
+  String _userName = 'Usuário';
 
   @override
   void initState() {
     super.initState();
+    _loadUserName();
     _checkAdminAccess();
     _loadClients();
+  }
+
+  /// Carrega o nome do usuário logado do Supabase
+  void _loadUserName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      // Tenta pegar o nome do metadata do usuário
+      final metadata = user.userMetadata;
+      if (metadata != null && metadata['name'] != null) {
+        setState(() => _userName = metadata['name']);
+      } else if (metadata != null && metadata['full_name'] != null) {
+        setState(() => _userName = metadata['full_name']);
+      } else if (user.email != null) {
+        // Se não tiver nome, usa a parte do email antes do @
+        setState(() => _userName = user.email!.split('@').first);
+      }
+    }
   }
 
   void _checkAdminAccess() {
@@ -44,7 +63,8 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final response = await _apiService.getLeadsBySeller();
+      // Busca todos os leads da API
+      final response = await _apiService.getAllLeads();
       
       if (response.isSuccess) {
         final leads = response.data ?? [];
@@ -400,7 +420,7 @@ class _HomePageState extends State<HomePage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Olá Fulano',
+            'Olá $_userName',
             style: TextStyle(
               fontSize: Responsive.fontSize(context, base: 28),
               fontWeight: FontWeight.bold,
@@ -530,16 +550,16 @@ class _HomePageState extends State<HomePage> {
     final isMobile = Responsive.isMobile(context);
 
     return Container(
-      margin: EdgeInsets.only(bottom: isMobile ? 16 : 24),
-      padding: EdgeInsets.all(isMobile ? 16 : 24),
+      margin: EdgeInsets.only(bottom: isMobile ? 20 : 28),
+      padding: EdgeInsets.all(isMobile ? 20 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 6),
             spreadRadius: 0,
           ),
         ],
@@ -558,33 +578,33 @@ class _HomePageState extends State<HomePage> {
           children: [
             // Logo da empresa
             Container(
-              width: 48,
-              height: 48,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: client.logoColor,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: client.logoUrl.isNotEmpty
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                       child: Image.network(
                         client.logoUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Icon(
                           client.logoIcon,
                           color: Colors.white,
-                          size: 24,
+                          size: 28,
                         ),
                       ),
                     )
                   : Icon(
                       client.logoIcon,
                       color: Colors.white,
-                      size: 24,
+                      size: 28,
                     ),
             ),
 
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
 
             // Nome e email
             Expanded(
@@ -594,16 +614,16 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     client.companyName,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
                     client.companyEmail,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 13,
                       color: Colors.grey.shade500,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -614,17 +634,17 @@ class _HomePageState extends State<HomePage> {
 
             // Ranking badge
             Container(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: client.rankColor,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
                 child: Text(
                   '#${client.rank}',
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -634,64 +654,69 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
         // Contato
         Text(
           client.contactName,
           style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
             color: Colors.black87,
           ),
         ),
+        const SizedBox(height: 2),
         Text(
           client.contactPhone,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade500,
+            fontSize: 13,
+            color: Colors.grey.shade600,
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
 
-        // Status e link
+        // Status e última interação
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    client.status,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.black87,
+                    'Status - ${client.status}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
                     ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     'Última interação: ${client.lastInteraction}',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 12,
                       color: Colors.grey.shade500,
                     ),
                   ),
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: () => _navigateToDetails(client),
-              child: const Text(
-                'Detalhes',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF3B82F6),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
           ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // Link Detalhes do cliente
+        GestureDetector(
+          onTap: () => _navigateToDetails(client),
+          child: const Text(
+            'Detalhes do cliente',
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF3B82F6),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ],
     );
@@ -702,33 +727,33 @@ class _HomePageState extends State<HomePage> {
       children: [
         // Logo da empresa
         Container(
-          width: 64,
-          height: 64,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             color: client.logoColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           child: client.logoUrl.isNotEmpty
               ? ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                   child: Image.network(
                     client.logoUrl,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Icon(
                       client.logoIcon,
                       color: Colors.white,
-                      size: 32,
+                      size: 36,
                     ),
                   ),
                 )
               : Icon(
                   client.logoIcon,
                   color: Colors.white,
-                  size: 32,
+                  size: 36,
                 ),
         ),
 
-        const SizedBox(width: 16),
+        const SizedBox(width: 24),
 
         // Informações da empresa e contato
         Expanded(
@@ -739,7 +764,7 @@ class _HomePageState extends State<HomePage> {
               Text(
                 client.companyName,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
                 ),
@@ -748,23 +773,25 @@ class _HomePageState extends State<HomePage> {
               Text(
                 client.companyEmail,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   color: Colors.grey.shade500,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 client.contactName,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
               ),
+              const SizedBox(height: 2),
               Text(
                 client.contactPhone,
                 style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade500,
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
                 ),
               ),
             ],
@@ -778,10 +805,10 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                client.status,
-                style: const TextStyle(
+                'Status - ${client.status}',
+                style: TextStyle(
                   fontSize: 14,
-                  color: Colors.black87,
+                  color: Colors.grey.shade700,
                 ),
               ),
               const SizedBox(height: 4),
@@ -792,13 +819,13 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.grey.shade500,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               GestureDetector(
                 onTap: () => _navigateToDetails(client),
                 child: const Text(
                   'Detalhes do cliente',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     color: Color(0xFF3B82F6),
                     fontWeight: FontWeight.w500,
                   ),
@@ -810,17 +837,17 @@ class _HomePageState extends State<HomePage> {
 
         // Ranking badge
         Container(
-          width: 56,
-          height: 56,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
             color: client.rankColor,
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(14),
           ),
           child: Center(
             child: Text(
               '#${client.rank}',
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),

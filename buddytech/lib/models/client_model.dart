@@ -12,14 +12,31 @@ class ClientModel {
   final String contactPhone;
   final String status;
   final String lastInteraction;
-  final String logoUrl; // URL da logo da empresa (se disponivel)
-  final String logoColorHex; // Cor em hexadecimal para fallback
-  final String logoIconName; // Nome do ícone para fallback
+  final String logoUrl;
+  final String logoColorHex;
+  final String logoIconName;
   final String aiSummary;
   final List<String> recommendedActions;
-  final String? suggestedEmail; // E-mail sugerido pela IA
-  final String? meetingScript; // Roteiro de reunião gerado pela IA
-  final ClientMetrics? metrics; // Métricas adicionais do cliente
+  final String? suggestedEmail;
+  final String? meetingScript;
+  final ClientMetrics? metrics;
+  
+  // Campos extras da Lead
+  final String? title;
+  final String? description;
+  final String? leadSource;
+  final String? priority;
+  final int? currentScore;
+  final double? probabilityOfClosing;
+  final String? nextStepSuggestion;
+  final String? suggestedContactType;
+  final int? interactionsCount;
+  final DateTime? expectedCloseDate;
+  
+  // Dados da empresa
+  final String? companyCNPJ;
+  final String? companyLocation;
+  final String? industry;
 
   ClientModel({
     required this.id,
@@ -38,6 +55,19 @@ class ClientModel {
     this.suggestedEmail,
     this.meetingScript,
     this.metrics,
+    this.title,
+    this.description,
+    this.leadSource,
+    this.priority,
+    this.currentScore,
+    this.probabilityOfClosing,
+    this.nextStepSuggestion,
+    this.suggestedContactType,
+    this.interactionsCount,
+    this.expectedCloseDate,
+    this.companyCNPJ,
+    this.companyLocation,
+    this.industry,
   });
 
   /// Converte cor hex string para Color
@@ -73,8 +103,18 @@ class ClientModel {
         return Icons.build;
       case 'devices':
         return Icons.devices;
+      case 'calendar_view_month':
+        return Icons.calendar_view_month;
+      case 'fiber_new':
+        return Icons.fiber_new;
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'corporate_fare':
+        return Icons.corporate_fare;
+      case 'domain':
+        return Icons.domain;
       default:
-        return Icons.business;
+        return Icons.corporate_fare; // Ícone padrão de empresa
     }
   }
 
@@ -109,48 +149,73 @@ class ClientModel {
 
   /// Factory para criar a partir de LeadDto da API
   factory ClientModel.fromLeadDto(LeadDto lead) {
-    // Gera cor baseada no nome da empresa (para variedade visual)
+    // Gera cor baseada no título da lead (para variedade visual)
     final colors = ['3B82F6', 'EF4444', '10B981', 'F59E0B', '8B5CF6', 'EC4899'];
-    final colorIndex = lead.companyName.length % colors.length;
+    final displayName = lead.displayName;
+    final colorIndex = displayName.length % colors.length;
     
-    // Gera ícone baseado no status ou nome
+    // Gera ícone baseado no status
     String iconName = 'business';
-    if (lead.status?.toLowerCase().contains('hot') == true) {
+    final statusLower = lead.status?.toLowerCase() ?? '';
+    if (statusLower == 'negotiation' || statusLower == 'closed' || statusLower == 'won') {
       iconName = 'local_fire_department';
-    } else if (lead.status?.toLowerCase().contains('cold') == true) {
-      iconName = 'ac_unit';
+    } else if (statusLower == 'new') {
+      iconName = 'fiber_new';
     }
 
-    // Formata a última interação
+    // Formata a última interação baseado na contagem de interações
     String lastInteractionStr = 'Sem interações';
-    if (lead.lastInteraction != null) {
-      final diff = DateTime.now().difference(lead.lastInteraction!);
-      if (diff.inDays == 0) {
-        lastInteractionStr = 'Hoje';
-      } else if (diff.inDays == 1) {
-        lastInteractionStr = 'Ontem';
-      } else if (diff.inDays < 7) {
-        lastInteractionStr = 'Há ${diff.inDays} dias';
-      } else if (diff.inDays < 30) {
-        lastInteractionStr = 'Há ${(diff.inDays / 7).floor()} semanas';
-      } else {
-        lastInteractionStr = 'Há ${(diff.inDays / 30).floor()} meses';
+    if (lead.interactionsCount != null && lead.interactionsCount! > 0) {
+      lastInteractionStr = '${lead.interactionsCount} interações';
+    }
+
+    // Calcula rank baseado na prioridade
+    int calculatedRank = 1;
+    if (lead.priority != null) {
+      switch (lead.priority!.toLowerCase()) {
+        case 'low': calculatedRank = 1; break;
+        case 'medium': calculatedRank = 2; break;
+        case 'high': calculatedRank = 3; break;
+        case 'urgent': calculatedRank = 4; break;
+        default: calculatedRank = 1;
       }
+    }
+    // Usa currentScore se disponível
+    if (lead.currentScore != null && lead.currentScore! > 0) {
+      calculatedRank = (lead.currentScore! / 20).clamp(1, 5).toInt();
     }
 
     return ClientModel(
       id: lead.id,
-      rank: lead.rank ?? 0,
-      companyName: lead.companyName,
+      rank: calculatedRank,
+      companyName: lead.companyName ?? displayName,
       companyEmail: lead.companyEmail ?? '',
-      contactName: lead.contactName ?? '',
-      contactPhone: lead.contactPhone ?? '',
-      status: lead.status ?? 'Novo',
+      contactName: lead.sellerName ?? '',
+      contactPhone: lead.companyPhone ?? '',
+      status: lead.statusText,
       lastInteraction: lastInteractionStr,
       logoColorHex: colors[colorIndex],
       logoIconName: iconName,
-      aiSummary: lead.aiSummary ?? 'Análise de IA ainda não disponível para este lead.',
-      recommendedActions: lead.recommendedActions ?? ['Fazer primeiro contato', 'Agendar reunião'],
+      logoUrl: lead.logoUrl ?? '',
+      aiSummary: lead.nextStepSuggestion ?? lead.description ?? 'Análise de IA ainda não disponível para este lead.',
+      recommendedActions: lead.suggestedContactType != null 
+          ? [lead.suggestedContactType!, 'Agendar reunião'] 
+          : ['Fazer primeiro contato', 'Agendar reunião'],
+      // Campos extras da lead
+      title: lead.title,
+      description: lead.description,
+      leadSource: lead.leadSource,
+      priority: lead.priorityText,
+      currentScore: lead.currentScore,
+      probabilityOfClosing: lead.probabilityOfClosing,
+      nextStepSuggestion: lead.nextStepSuggestion,
+      suggestedContactType: lead.suggestedContactType,
+      interactionsCount: lead.interactionsCount,
+      expectedCloseDate: lead.expectedCloseDate,
+      // Dados da empresa
+      companyCNPJ: lead.companyCNPJ,
+      companyLocation: lead.companyLocation,
+      industry: lead.industry,
     );
   }
 

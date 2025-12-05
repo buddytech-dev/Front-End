@@ -55,8 +55,8 @@ class Responsive {
   /// Largura máxima do conteúdo
   static double maxContentWidth(BuildContext context) {
     if (isMobile(context)) return double.infinity;
-    if (isTablet(context)) return 700;
-    return 900;
+    if (isTablet(context)) return 900;
+    return 1200;
   }
 
   /// Tamanho de fonte responsivo com base

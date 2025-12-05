@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_colors.dart';
 import '../routes/routes.dart';
 import '../services/admin_service.dart';
@@ -36,6 +37,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _logout() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao sair: $e')),
+        );
+      }
     }
   }
 
@@ -87,7 +106,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             if (!isMobile) ...[
               IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () => Navigator.pop(context),
+                onPressed: _logout,
               ),
               const SizedBox(width: 8),
             ],
@@ -155,9 +174,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             _buildDrawerItem('Configurações', Icons.settings, 3),
             const Spacer(),
             ListTile(
-              leading: const Icon(Icons.arrow_back, color: Colors.grey),
-              title: const Text('Voltar ao App'),
-              onTap: () => Navigator.pop(context),
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Sair', style: TextStyle(color: Colors.red)),
+              onTap: _logout,
             ),
             const SizedBox(height: 16),
           ],
@@ -172,17 +191,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? const Color(0xFF3B82F6) : Colors.grey.shade600,
+        color: isSelected ? AppColors.primary : Colors.grey.shade600,
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: isSelected ? const Color(0xFF3B82F6) : Colors.grey.shade800,
+          color: isSelected ? AppColors.primary : Colors.grey.shade800,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       selected: isSelected,
-      selectedTileColor: const Color(0xFF3B82F6).withOpacity(0.1),
+      selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
       onTap: () {
         Navigator.pop(context);
         _onNavTap(index);
@@ -193,11 +212,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF3B82F6),
+        color: AppColors.primary,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -234,7 +253,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
         child: Icon(
           icon,
-          color: isSelected ? const Color(0xFF3B82F6) : Colors.white,
+          color: isSelected ? AppColors.primary : Colors.white,
           size: 24,
         ),
       ),
@@ -262,7 +281,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
         padding: EdgeInsets.all(padding),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ========== AÇÕES RÁPIDAS ==========
+            _buildQuickActionsSection(),
+            
+            SizedBox(height: isMobile ? 20 : 28),
+
             // Cards principais - Leads e Faturamento
             isMobile
                 ? Row(
@@ -365,6 +390,191 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
             const SizedBox(height: 24),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Seção de Ações Rápidas para o Admin
+  Widget _buildQuickActionsSection() {
+    final isMobile = Responsive.isMobile(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ações Rápidas',
+          style: TextStyle(
+            fontSize: isMobile ? 18 : 20,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        SizedBox(height: isMobile ? 12 : 16),
+        
+        // Grid de ações
+        isMobile
+            ? Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          icon: Icons.person_add,
+                          title: 'Nova Conta',
+                          subtitle: 'Criar vendedor',
+                          color: AppColors.primary,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.adminAccounts),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          icon: Icons.people,
+                          title: 'Usuários',
+                          subtitle: 'Gerenciar',
+                          color: Colors.green,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.adminUsers),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          icon: Icons.business,
+                          title: 'Leads',
+                          subtitle: 'Gerenciar',
+                          color: Colors.orange,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.adminLeads),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          icon: Icons.settings,
+                          title: 'Configurações',
+                          subtitle: 'Ajustes',
+                          color: Colors.purple,
+                          onTap: () {
+                            // TODO: Navegar para configurações
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Configurações em breve!')),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      icon: Icons.person_add,
+                      title: 'Nova Conta',
+                      subtitle: 'Criar novo vendedor',
+                      color: AppColors.primary,
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.adminAccounts),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      icon: Icons.people,
+                      title: 'Usuários',
+                      subtitle: 'Gerenciar usuários',
+                      color: Colors.green,
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.adminUsers),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      icon: Icons.business,
+                      title: 'Leads',
+                      subtitle: 'Gerenciar leads',
+                      color: Colors.orange,
+                      onTap: () => Navigator.pushNamed(context, AppRoutes.adminLeads),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildQuickActionCard(
+                      icon: Icons.settings,
+                      title: 'Configurações',
+                      subtitle: 'Ajustes do sistema',
+                      color: Colors.purple,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Configurações em breve!')),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+      ],
+    );
+  }
+
+  /// Card de ação rápida
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final isMobile = Responsive.isMobile(context);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      elevation: 2,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: EdgeInsets.all(isMobile ? 14 : 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: EdgeInsets.all(isMobile ? 8 : 10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: isMobile ? 22 : 26,
+                ),
+              ),
+              SizedBox(height: isMobile ? 10 : 14),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: isMobile ? 11 : 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

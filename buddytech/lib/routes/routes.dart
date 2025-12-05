@@ -7,6 +7,7 @@ import '../pages/client_details_page.dart';
 import '../pages/admin_dashboard_page.dart';
 import '../pages/admin_users_page.dart';
 import '../pages/admin_accounts_page.dart';
+import '../pages/admin_leads_page.dart';
 import '../models/client_model.dart';
 
 /// Argumentos para navegação à página de detalhes do cliente
@@ -20,8 +21,25 @@ class ClientDetailsArgs {
   final int rank;
   final Color logoColor;
   final IconData logoIcon;
+  final String logoUrl;
   final String aiSummary;
   final List<String> recommendedActions;
+  
+  // Campos extras da Lead
+  final String? title;
+  final String? description;
+  final String? leadSource;
+  final String? priority;
+  final int? currentScore;
+  final double? probabilityOfClosing;
+  final String? nextStepSuggestion;
+  final String? suggestedContactType;
+  final int? interactionsCount;
+  
+  // Dados da empresa
+  final String? companyCNPJ;
+  final String? companyLocation;
+  final String? industry;
 
   ClientDetailsArgs({
     required this.companyName,
@@ -33,8 +51,21 @@ class ClientDetailsArgs {
     required this.rank,
     required this.logoColor,
     required this.logoIcon,
+    this.logoUrl = '',
     required this.aiSummary,
     required this.recommendedActions,
+    this.title,
+    this.description,
+    this.leadSource,
+    this.priority,
+    this.currentScore,
+    this.probabilityOfClosing,
+    this.nextStepSuggestion,
+    this.suggestedContactType,
+    this.interactionsCount,
+    this.companyCNPJ,
+    this.companyLocation,
+    this.industry,
   });
 
   /// Cria a partir de um ClientModel
@@ -49,8 +80,21 @@ class ClientDetailsArgs {
       rank: client.rank,
       logoColor: client.logoColor,
       logoIcon: client.logoIcon,
+      logoUrl: client.logoUrl,
       aiSummary: client.aiSummary,
       recommendedActions: client.recommendedActions,
+      title: client.title,
+      description: client.description,
+      leadSource: client.leadSource,
+      priority: client.priority,
+      currentScore: client.currentScore,
+      probabilityOfClosing: client.probabilityOfClosing,
+      nextStepSuggestion: client.nextStepSuggestion,
+      suggestedContactType: client.suggestedContactType,
+      interactionsCount: client.interactionsCount,
+      companyCNPJ: client.companyCNPJ,
+      companyLocation: client.companyLocation,
+      industry: client.industry,
     );
   }
 }
@@ -72,6 +116,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin';
   static const String adminUsers = '/admin/users';
   static const String adminAccounts = '/admin/accounts';
+  static const String adminLeads = '/admin/leads';
 }
 
 /// Gerador de rotas do aplicativo
@@ -107,8 +152,21 @@ class AppRouter {
             rank: args.rank,
             logoColor: args.logoColor,
             logoIcon: args.logoIcon,
+            logoUrl: args.logoUrl,
             aiSummary: args.aiSummary,
             recommendedActions: args.recommendedActions,
+            title: args.title,
+            description: args.description,
+            leadSource: args.leadSource,
+            priority: args.priority,
+            currentScore: args.currentScore,
+            probabilityOfClosing: args.probabilityOfClosing,
+            nextStepSuggestion: args.nextStepSuggestion,
+            suggestedContactType: args.suggestedContactType,
+            interactionsCount: args.interactionsCount,
+            companyCNPJ: args.companyCNPJ,
+            companyLocation: args.companyLocation,
+            industry: args.industry,
           ),
           settings,
         );
@@ -122,6 +180,9 @@ class AppRouter {
         
       case AppRoutes.adminAccounts:
         return _buildRoute(const AdminAccountsPage(), settings);
+        
+      case AppRoutes.adminLeads:
+        return _buildRoute(const AdminLeadsPage(), settings);
 
       // ========== ROTA NÃO ENCONTRADA ==========
       default:
