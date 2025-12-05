@@ -65,7 +65,7 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
   }
 
   // -------------------------------------------------------------
-  // MOBILE (UI igual à imagem enviada)
+  // MOBILE
   // -------------------------------------------------------------
   Widget _buildMobile(BuildContext context) {
     return SafeArea(
@@ -152,7 +152,7 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
 
                   const SizedBox(height: 32),
 
-                  // ---------------- BOTÃO ENVIAR ----------------
+                  // ---------------- Enviar link ----------------
                   SizedBox(
                     width: double.infinity,
                     height: 54,
@@ -172,17 +172,31 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
 
                   const SizedBox(height: 16),
 
-                  // ---------------- VOLTAR ----------------
-                  TextButton(
-                    onPressed: () => Navigator.pushReplacementNamed(
-                      context,
-                      AppRoutes.login,
-                    ),
-                    child: const Text(
-                      "Voltar para login",
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
+                  // ---------------- VOLTAR PARA LOGIN ----------------
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.3,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pushReplacementNamed(
+                        context,
+                        AppRoutes.login,
+                      ),
+                      child: const Text(
+                        "Voltar para login",
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
