@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_colors.dart';
 import '../routes/routes.dart';
 
+/// Página de Login da aplicação.
+/// Permite que usuários (Vendedores e Admins) entrem no sistema.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -24,6 +26,8 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Realiza o login do usuário usando Supabase Auth.
+  /// Valida os campos, autentica e redireciona para a página correta.
   Future<void> login() async {
     try {
       setState(() => loading = true);
@@ -111,10 +115,12 @@ class _LoginPageState extends State<LoginPage> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      // Escolhe o layout baseado na largura da tela (Responsividade)
       body: isMobile ? _buildMobileLayout() : _buildDesktopLayout(),
     );
   }
 
+  /// Constrói o campo de entrada de e-mail.
   Widget _buildEmailField() {
     return TextField(
       controller: emailController,
@@ -139,6 +145,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  /// Constrói o campo de entrada de senha com botão de visibilidade.
   Widget _buildPasswordField() {
     return TextField(
       controller: passwordController,
@@ -174,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// Layout para mobile - apenas formulário com header
+  /// Layout para mobile - exibe apenas o formulário centralizado com fundo gradiente.
   Widget _buildMobileLayout() {
     return Container(
       width: double.infinity,
@@ -208,7 +215,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Logo
+                // Logo da aplicação
                 Container(
                   height: 90,
                   width: 90,
@@ -219,7 +226,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 12),
 
-                // Nome
+                // Nome da aplicação
                 const Text(
                   "BuddyTech",
                   style: TextStyle(
@@ -231,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 32),
 
-                // Formulário
+                // Campo de E-mail
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -247,6 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                 _buildEmailField(),
                 const SizedBox(height: 20),
 
+                // Campo de Senha
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -263,7 +271,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 28),
 
-                // Botão entrar
+                // Botão de Login
                 SizedBox(
                   width: double.infinity,
                   height: 55,

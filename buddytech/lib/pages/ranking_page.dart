@@ -3,7 +3,8 @@ import '../config/app_colors.dart';
 import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
-/// Modelo para o ranking de vendedores
+/// Modelo para o ranking de vendedores.
+/// Armazena estatísticas de desempenho de cada vendedor.
 class SellerRanking {
   final String id;
   final String name;
@@ -28,6 +29,8 @@ class SellerRanking {
   });
 }
 
+/// Página de Ranking de Vendedores.
+/// Exibe a classificação dos vendedores baseada em pontos e desempenho.
 class RankingPage extends StatefulWidget {
   const RankingPage({super.key});
 
@@ -48,6 +51,8 @@ class _RankingPageState extends State<RankingPage> {
     _loadRankings();
   }
 
+  /// Carrega os dados de ranking da API.
+  /// Busca vendedores e leads, calcula estatísticas e ordena por pontuação.
   Future<void> _loadRankings() async {
     setState(() {
       _isLoading = true;
@@ -222,6 +227,9 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói a tela de erro.
+  ///
+  /// Exibe uma mensagem de erro e um botão para tentar recarregar os dados.
   Widget _buildError() {
     return Center(
       child: Padding(
@@ -248,6 +256,9 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói o conteúdo principal da página.
+  ///
+  /// Exibe o pódio (top 3) e a lista completa de vendedores.
   Widget _buildContent() {
     if (_rankings.isEmpty) {
       return _buildEmptyState();
@@ -274,6 +285,7 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói o estado vazio (sem vendedores).
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -314,6 +326,9 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói a seção de destaque para os 3 primeiros colocados.
+  ///
+  /// Adapta o layout para mobile (vertical) ou desktop (pódio horizontal).
   Widget _buildTopThree() {
     final isMobile = Responsive.isMobile(context);
     final top3 = _rankings.take(3).toList();
@@ -371,6 +386,7 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói um item individual do pódio (1º, 2º ou 3º lugar).
   Widget _buildPodiumItem(SellerRanking seller, int position, bool isFirst) {
     final isCurrentUser = seller.id == _currentUserId;
     
@@ -551,6 +567,7 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói uma estatística compacta (ícone + valor).
   Widget _buildMiniStat(IconData icon, String value) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -568,6 +585,7 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói a lista de classificação (abaixo do pódio).
   Widget _buildRankingList() {
     // Pula os primeiros 3 (já mostrados no pódio)
     final restOfList = _rankings.length > 3 ? _rankings.skip(3).toList() : <SellerRanking>[];
@@ -608,6 +626,7 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói um item da lista de classificação.
   Widget _buildRankingItem(SellerRanking seller) {
     final isCurrentUser = seller.id == _currentUserId;
     final isMobile = Responsive.isMobile(context);
@@ -764,6 +783,7 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
+  /// Constrói um avatar padrão com a inicial do nome.
   Widget _buildDefaultAvatar(String name) {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     

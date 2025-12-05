@@ -3,6 +3,8 @@ import '../config/app_colors.dart';
 import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
+/// Página de Gerenciamento de Leads (Administrativo).
+/// Permite visualizar todos os leads do sistema e atribuí-los a vendedores.
 class AdminLeadsPage extends StatefulWidget {
   const AdminLeadsPage({super.key});
 
@@ -24,6 +26,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     _loadData();
   }
 
+  /// Carrega leads e vendedores da API em paralelo.
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
@@ -108,6 +111,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói o cabeçalho da página.
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
 
@@ -142,6 +146,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói o estado de erro.
   Widget _buildErrorState() {
     return Center(
       child: Column(
@@ -161,6 +166,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói o conteúdo principal (estatísticas e lista de leads).
   Widget _buildContent() {
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.padding(context);
@@ -189,6 +195,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói o card de estatísticas (resumo de leads).
   Widget _buildStatsCard() {
     final isMobile = Responsive.isMobile(context);
     final wonLeads = _leads.where((l) => l.status?.toLowerCase() == 'won' || l.status?.toLowerCase() == 'closed').length;
@@ -223,6 +230,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói um badge de estatística individual.
   Widget _buildStatBadge(String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -236,6 +244,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói o estado vazio (sem leads).
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
@@ -257,6 +266,7 @@ class _AdminLeadsPageState extends State<AdminLeadsPage> {
     );
   }
 
+  /// Constrói o card de lead individual.
   Widget _buildLeadCard(LeadDto lead) {
     final isMobile = Responsive.isMobile(context);
     final statusColor = _getStatusColor(lead.status);

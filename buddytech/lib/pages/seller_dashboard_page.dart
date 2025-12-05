@@ -4,6 +4,8 @@ import '../routes/routes.dart';
 import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
+/// Página do Dashboard do Vendedor.
+/// Exibe métricas de desempenho, leads atribuídos e visão geral das vendas.
 class SellerDashboardPage extends StatefulWidget {
   const SellerDashboardPage({super.key});
 
@@ -24,6 +26,10 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     _loadData();
   }
 
+  /// Carrega os dados do dashboard do vendedor:
+  /// - Leads atribuídos ao vendedor
+  /// - Todos os leads (para comparação/métricas)
+  /// - Dados do vendedor atual
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
@@ -114,6 +120,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói o cabeçalho com informações do vendedor.
   Widget _buildSellerHeader() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -209,6 +216,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói a seção de métricas (cards de resumo).
   Widget _buildMetricsSection() {
     final isMobile = Responsive.isMobile(context);
     
@@ -304,6 +312,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói um card de métrica individual.
   Widget _buildMetricCard({
     required String title,
     required String value,
@@ -356,6 +365,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói a seção "Minhas Leads".
   Widget _buildMyLeadsSection() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -428,6 +438,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói a seção "Oportunidades de Parceria".
   Widget _buildPartnershipOpportunitiesSection() {
     // Leads de outros vendedores que podem ser parcerias
     final partnershipLeads = _allLeads.where((lead) {
@@ -509,6 +520,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói a seção "Todas as Empresas".
   Widget _buildAllCompaniesSection() {
     // Agrupa leads por empresa
     final companiesMap = <String, List<LeadDto>>{};
@@ -590,6 +602,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói um item de lead (usado em "Minhas Leads" e "Parcerias").
   Widget _buildLeadItem(LeadDto lead, {bool isMyLead = false, bool isPartnership = false}) {
     final statusColor = _getStatusColor(lead.status);
 
@@ -719,6 +732,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     );
   }
 
+  /// Constrói um item de empresa (agrupamento de leads).
   Widget _buildCompanyItem(String companyName, List<LeadDto> leads) {
     final totalLeads = leads.length;
     final wonLeads = leads.where((l) => 

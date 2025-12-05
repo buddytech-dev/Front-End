@@ -5,6 +5,8 @@ import '../models/interaction_history.dart';
 import '../services/interaction_history_service.dart';
 import '../utils/responsive.dart';
 
+/// Página de Histórico de Interações.
+/// Exibe todas as interações registradas com leads, permitindo filtragem e visualização de detalhes.
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
@@ -25,6 +27,7 @@ class _HistoryPageState extends State<HistoryPage> {
     _loadHistory();
   }
 
+  /// Carrega o histórico de interações e estatísticas do serviço local.
   Future<void> _loadHistory() async {
     setState(() => _isLoading = true);
     
@@ -50,6 +53,7 @@ class _HistoryPageState extends State<HistoryPage> {
     }
   }
 
+  /// Retorna a lista de interações filtrada pelo tipo selecionado.
   List<InteractionHistory> get _filteredHistory {
     if (_selectedFilter == 'all') return _history;
     return _history.where((e) => e.interactionType == _selectedFilter).toList();
@@ -72,6 +76,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói o cabeçalho da página.
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
 
@@ -142,6 +147,9 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói o conteúdo principal da página.
+  ///
+  /// Exibe estatísticas, filtros e a lista de histórico.
   Widget _buildContent() {
     final isMobile = Responsive.isMobile(context);
 
@@ -174,6 +182,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói os cards de estatísticas (Total, Semana, Mês).
   Widget _buildStatisticsCards() {
     final isMobile = Responsive.isMobile(context);
     final total = _statistics['total'] ?? 0;
@@ -212,6 +221,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói um card de estatística individual.
   Widget _buildStatCard({
     required IconData icon,
     required String label,
@@ -256,6 +266,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói a barra de filtros por tipo de interação.
   Widget _buildFilters() {
     final filters = [
       {'value': 'all', 'label': 'Todos', 'icon': Icons.all_inclusive},
@@ -303,6 +314,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói o estado vazio (sem interações).
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
@@ -348,6 +360,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói a lista de histórico agrupada por data.
   Widget _buildHistoryList() {
     final items = _filteredHistory;
 
@@ -403,6 +416,7 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  /// Constrói um item individual do histórico.
   Widget _buildHistoryItem(InteractionHistory item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

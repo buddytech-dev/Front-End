@@ -7,6 +7,8 @@ import '../services/api_service.dart';
 import '../services/interaction_history_service.dart';
 import '../utils/responsive.dart';
 
+/// Página de detalhes de um cliente (Lead).
+/// Exibe informações detalhadas, histórico de interações e permite realizar ações como enviar email, gerar script e registrar interações.
 class ClientDetailsPage extends StatefulWidget {
   final String leadId;
   final String companyName;
@@ -163,6 +165,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói o cabeçalho da página.
   Widget _buildHeader(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
 
@@ -213,6 +216,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói o conteúdo principal da página de detalhes.
+  /// Organiza os cards de informação em uma coluna centralizada.
   Widget _buildContent(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final contentPadding = Responsive.padding(context);
@@ -259,6 +264,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói o card com informações básicas do cliente (Logo, Nome, Contato).
+  /// Adapta o layout para mobile (coluna) ou desktop (linha).
   Widget _buildClientInfoCard() {
     final isMobile = Responsive.isMobile(context);
     final logoSize = Responsive.value<double>(
@@ -448,7 +455,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
-  /// Card com métricas da lead (Score, Probabilidade, Prioridade, Fonte)
+  /// Constrói o card de métricas do lead (Score, Probabilidade, Prioridade).
+  /// Exibe indicadores visuais coloridos para facilitar a análise rápida.
   Widget _buildLeadMetricsCard() {
     print('🎨 Rebuild _buildLeadMetricsCard: score=$_currentScore, interações=$_interactionsCount');
     
@@ -561,6 +569,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói um item individual de métrica (ícone + rótulo + valor).
   Widget _buildMetricItem({
     required IconData icon,
     required String label,
@@ -606,7 +615,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
-  /// Card com dados da empresa (CNPJ, Localização, Setor)
+  /// Constrói o card com dados detalhados da empresa (CNPJ, Localização, Setor).
   Widget _buildCompanyDataCard() {
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
@@ -683,6 +692,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Gera a lista de widgets com informações da empresa para o card.
   List<Widget> _buildCompanyInfoItems() {
     final items = <Widget>[];
 
@@ -770,6 +780,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     return items;
   }
 
+  /// Constrói uma linha de informação da empresa (ícone + rótulo + valor).
+  ///
+  /// Exibe um ícone, um rótulo descritivo e o valor correspondente.
+  /// Se [copyable] for true, exibe um botão para copiar o valor.
   Widget _buildCompanyInfoRow({
     required IconData icon,
     required String label,
@@ -846,12 +860,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Retorna a cor associada à probabilidade de fechamento.
+  ///
+  /// * Verde: Alta probabilidade (>= 0.7)
+  /// * Laranja: Média probabilidade (>= 0.4)
+  /// * Vermelho: Baixa probabilidade (< 0.4)
   Color _getProbabilityColor(double probability) {
     if (probability >= 0.7) return Colors.green;
     if (probability >= 0.4) return Colors.orange;
     return Colors.red;
   }
 
+  /// Retorna a cor associada à prioridade do lead.
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
       case 'urgent':
@@ -871,6 +891,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     }
   }
 
+  /// Constrói o cartão de informações de contato.
+  ///
+  /// Exibe detalhes como telefone, email e endereço, permitindo ações rápidas.
   Widget _buildContactCard(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
@@ -1059,6 +1082,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Retorna a cor associada ao status do lead.
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'ganho':
@@ -1080,6 +1104,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     }
   }
 
+  /// Retorna o ícone associado ao status do lead.
   IconData _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'ganho':
@@ -1101,6 +1126,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     }
   }
 
+  /// Retorna o ícone associado ao tipo de contato.
   IconData _getContactTypeIcon(String contactType) {
     switch (contactType.toLowerCase()) {
       case 'email':
@@ -1122,6 +1148,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     }
   }
 
+  /// Constrói o cartão de análise de Inteligência Artificial.
+  ///
+  /// Exibe insights gerados por IA, incluindo score de probabilidade e resumo.
   Widget _buildAIAnalysisCard() {
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
@@ -1368,6 +1397,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói o cartão de ações recomendadas.
+  ///
+  /// Lista ações sugeridas para avançar com o lead, como enviar email ou agendar reunião.
   Widget _buildRecommendedActionsCard() {
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
@@ -1495,6 +1527,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói um card individual de ação recomendada.
   Widget _buildActionCard({
     required IconData icon,
     required String title,
@@ -1548,6 +1581,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     );
   }
 
+  /// Constrói os botões de ação principais (Registrar Interação, Editar, etc.).
+  ///
+  /// Adapta o layout para mobile (coluna) ou desktop (linha).
   Widget _buildActionButtons(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
 
