@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'home_page.dart';
+import 'admin_dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,17 +34,71 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomePage()),
-        );
+        await _navigateAfterLogin();
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Erro: $e")));
     } finally {
-      setState(() => loading = false);
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
+  /// Navega de acordo com a role do usuário
+  /// Roles: 0 = non (sem acesso), 1 = admin, 2 = seller
+  Future<void> _navigateAfterLogin() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null || !mounted) return;
+
+    try {
+      final seller = await Supabase.instance.client
+          .from('Sellers')
+          .select('Role')
+          .eq('Id', user.id)
+          .maybeSingle();
+
+      if (!mounted) return;
+
+      final role = seller?['Role'] as int? ?? 0;
+
+      if (role == 0) {
+        // Sem acesso - faz logout e mostra erro
+        await Supabase.instance.client.auth.signOut();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Usuário sem permissão de acesso.")),
+          );
+        }
+        return;
+      } else if (role == 1) {
+        // Admin - vai para dashboard admin
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+        );
+      } else if (role == 2) {
+        // Seller - vai para home normal
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      } else {
+        // Role desconhecida - vai para home como fallback
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      }
+    } catch (e) {
+      // Se der erro ao buscar perfil, mostra erro
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro ao verificar permissões: $e")),
+        );
+      }
     }
   }
 

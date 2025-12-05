@@ -4,8 +4,10 @@ import '../pages/login_page.dart';
 import '../pages/client_details_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/history_page.dart';
+import '../pages/admin_dashboard_page.dart';
 import '../models/client_model.dart';
 import '../services/client_service.dart';
+import '../services/admin_service.dart';
 import '../utils/responsive.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,15 +20,24 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedNavIndex = 0;
   final ClientService _clientService = ClientService();
+  final AdminService _adminService = AdminService();
   List<ClientModel> _clients = [];
   bool _isLoading = true;
   String? _error;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
+    _checkAdminAccess();
     _loadClients();
+  }
+
+  void _checkAdminAccess() {
+    setState(() {
+      _isAdmin = _adminService.isCurrentUserAdmin();
+    });
   }
 
   Future<void> _loadClients() async {
@@ -130,6 +141,31 @@ class _HomePageState extends State<HomePage> {
             _buildDrawerItem('Histórico', Icons.history, 1),
             _buildDrawerItem('Ranking', Icons.leaderboard, 2),
             _buildDrawerItem('Perfil', Icons.person, 3),
+
+            // Admin - só aparece se for admin
+            if (_isAdmin) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(
+                  Icons.admin_panel_settings,
+                  color: Color(0xFF3B82F6),
+                ),
+                title: const Text(
+                  'Painel Admin',
+                  style: TextStyle(
+                    color: Color(0xFF3B82F6),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+                  );
+                },
+              ),
+            ],
 
             const Spacer(),
 
@@ -266,6 +302,39 @@ class _HomePageState extends State<HomePage> {
                   _navItem('Ranking', 2),
                   const SizedBox(width: 16),
                   _navItem('Perfil', 3),
+                  // Botão Admin (só aparece se for admin)
+                  if (_isAdmin) ...[
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.admin_panel_settings, color: Color(0xFF2563EB), size: 18),
+                            SizedBox(width: 6),
+                            Text(
+                              'Admin',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF2563EB),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(width: 24),
                   // Botão de logout
                   IconButton(
