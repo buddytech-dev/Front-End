@@ -303,7 +303,9 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.recoverPassword);
+                    },
                     child: const Text(
                       "Esqueci minha senha",
                       style: TextStyle(
@@ -526,7 +528,7 @@ class _LoginPageState extends State<LoginPage> {
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () {
-              // TODO: Implementar recuperação de senha
+              Navigator.pushNamed(context, AppRoutes.recoverPassword);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             child: const Text("Esqueceu a senha?"),
