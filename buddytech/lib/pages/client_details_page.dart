@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/client_service.dart';
+import '../utils/responsive.dart';
 
 class ClientDetailsPage extends StatefulWidget {
   final String companyName;
@@ -60,8 +61,13 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
+        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
@@ -69,54 +75,67 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           end: Alignment.centerRight,
         ),
       ),
-      child: Row(
-        children: [
-          // Botão voltar
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'Detalhes do Cliente',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            // Botão voltar
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back, 
+                color: Colors.white, 
+                size: isMobile ? 24 : 28,
+              ),
+              onPressed: () => Navigator.pop(context),
             ),
-          ),
-        ],
+            SizedBox(width: isMobile ? 8 : 16),
+            Expanded(
+              child: Text(
+                'Detalhes do Cliente',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 24),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildContent(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final contentPadding = Responsive.padding(context);
+    
     return Center(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 900),
-        padding: const EdgeInsets.all(40),
+        constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+        padding: EdgeInsets.all(contentPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Card de informações do cliente
             _buildClientInfoCard(),
 
-            const SizedBox(height: 32),
+            SizedBox(height: isMobile ? 20 : 32),
 
             // Card de contato
             _buildContactCard(context),
 
-            const SizedBox(height: 32),
+            SizedBox(height: isMobile ? 20 : 32),
 
             // Card de resumo de análise IA
             _buildAIAnalysisCard(),
 
-            const SizedBox(height: 32),
+            SizedBox(height: isMobile ? 20 : 32),
 
             // Card de ações recomendadas
             _buildRecommendedActionsCard(),
 
-            const SizedBox(height: 40),
+            SizedBox(height: isMobile ? 24 : 40),
 
             // Botões de ação
             _buildActionButtons(context),
@@ -127,8 +146,12 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   }
 
   Widget _buildClientInfoCard() {
+    final isMobile = Responsive.isMobile(context);
+    final logoSize = Responsive.value<double>(context, mobile: 60, tablet: 70, desktop: 80);
+    final badgeSize = Responsive.value<double>(context, mobile: 48, tablet: 56, desktop: 64);
+    
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -140,77 +163,147 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Logo da empresa
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: widget.logoColor,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              widget.logoIcon,
-              color: Colors.white,
-              size: 40,
-            ),
-          ),
-
-          const SizedBox(width: 24),
-
-          // Informações da empresa
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: isMobile
+          ? Column(
               children: [
-                Text(
-                  widget.companyName,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                Row(
+                  children: [
+                    // Logo da empresa
+                    Container(
+                      width: logoSize,
+                      height: logoSize,
+                      decoration: BoxDecoration(
+                        color: widget.logoColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        widget.logoIcon,
+                        color: Colors.white,
+                        size: logoSize * 0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Informações da empresa
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.companyName,
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 20),
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Última: ${widget.lastInteraction}',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 13),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Badge de ranking
+                    Container(
+                      width: badgeSize,
+                      height: badgeSize,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF3B82F6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '#${widget.rank}',
+                          style: TextStyle(
+                            fontSize: badgeSize * 0.35,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Row(
+              children: [
+                // Logo da empresa
+                Container(
+                  width: logoSize,
+                  height: logoSize,
+                  decoration: BoxDecoration(
+                    color: widget.logoColor,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    widget.logoIcon,
+                    color: Colors.white,
+                    size: logoSize * 0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Última interação: ${widget.lastInteraction}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+
+                const SizedBox(width: 24),
+
+                // Informações da empresa
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.companyName,
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 24),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Última interação: ${widget.lastInteraction}',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 14),
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Badge de ranking
+                Container(
+                  width: badgeSize,
+                  height: badgeSize,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF3B82F6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      '#${widget.rank}',
+                      style: TextStyle(
+                        fontSize: badgeSize * 0.35,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-
-          // Badge de ranking
-          Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
-              color: Color(0xFF3B82F6),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                '#${widget.rank}',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildContactCard(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final cardPadding = isMobile ? 16.0 : 24.0;
+    
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -228,140 +321,231 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           // Status
           Row(
             children: [
-              const Text(
+              Text(
                 'Estado - ',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Responsive.fontSize(context, base: 16),
                   color: Colors.black54,
                 ),
               ),
-              Text(
-                widget.status,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  widget.status,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, base: 16),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
           const Divider(),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
 
           // Email
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'E-mail do contato',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+          isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'E-mail do contato',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, base: 14),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.companyEmail,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.companyEmail,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, base: 14),
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              TextButton(
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: widget.companyEmail));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('E-mail copiado!'),
-                      duration: Duration(seconds: 2),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: widget.companyEmail));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('E-mail copiado!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 16),
+                      label: const Text('Copiar e-mail'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF3B82F6),
+                        padding: EdgeInsets.zero,
+                      ),
                     ),
-                  );
-                },
-                child: const Text(
-                  'Copiar e-mail',
-                  style: TextStyle(
-                    color: Color(0xFF3B82F6),
-                    fontWeight: FontWeight.w500,
-                  ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'E-mail do contato',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 14),
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.companyEmail,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 14),
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: widget.companyEmail));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('E-mail copiado!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Copiar e-mail',
+                        style: TextStyle(
+                          color: Color(0xFF3B82F6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
           const Divider(),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
 
           // Telefone
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Nome do contato',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+          isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Nome do contato',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, base: 14),
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    widget.contactName,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.contactName,
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, base: 14),
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Telefone - ${widget.contactPhone}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
+                    const SizedBox(height: 2),
+                    Text(
+                      'Telefone - ${widget.contactPhone}',
+                      style: TextStyle(
+                        fontSize: Responsive.fontSize(context, base: 14),
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              TextButton(
-                onPressed: () {
-                  // TODO: Integrar com WhatsApp ou SMS
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Funcionalidade em desenvolvimento'),
-                      duration: Duration(seconds: 2),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Funcionalidade em desenvolvimento'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.message, size: 16),
+                      label: const Text('Enviar mensagem'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF3B82F6),
+                        padding: EdgeInsets.zero,
+                      ),
                     ),
-                  );
-                },
-                child: const Text(
-                  'enviar\nmensagem',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color(0xFF3B82F6),
-                    fontWeight: FontWeight.w500,
-                  ),
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Nome do contato',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 14),
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.contactName,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 14),
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Telefone - ${widget.contactPhone}',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 14),
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Funcionalidade em desenvolvimento'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'enviar\nmensagem',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Color(0xFF3B82F6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ],
       ),
     );
   }
 
   Widget _buildAIAnalysisCard() {
+    final isMobile = Responsive.isMobile(context);
+    final cardPadding = isMobile ? 16.0 : 24.0;
+    
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -376,18 +560,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Resumo de análise IA',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: Responsive.fontSize(context, base: 16),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
@@ -396,7 +580,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
             child: Text(
               widget.aiSummary,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: Responsive.fontSize(context, base: 14),
                 color: Colors.grey.shade700,
                 height: 1.5,
               ),
@@ -408,8 +592,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   }
 
   Widget _buildRecommendedActionsCard() {
+    final isMobile = Responsive.isMobile(context);
+    final cardPadding = isMobile ? 16.0 : 24.0;
+    
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -424,18 +611,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Ações recomendadas',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: Responsive.fontSize(context, base: 16),
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: isMobile ? 12 : 16),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(isMobile ? 12 : 16),
             decoration: BoxDecoration(
               color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(12),
@@ -474,7 +661,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: Responsive.fontSize(context, base: 14),
               color: Colors.grey.shade700,
               height: 1.4,
             ),
@@ -485,6 +672,96 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   }
 
   Widget _buildActionButtons(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    
+    if (isMobile) {
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoadingEmail ? null : () => _showSuggestedEmail(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF3B82F6),
+                    side: const BorderSide(color: Color(0xFF3B82F6)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: _isLoadingEmail
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Ver e-mail\nsugerido',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 13),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoadingScript ? null : () => _showMeetingScript(context),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF3B82F6),
+                    side: const BorderSide(color: Color(0xFF3B82F6)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: _isLoadingScript
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Gerar roteiro\nda reunião',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 13),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _completeAction(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: Text(
+                'Concluir Ação',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 15),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
     return Row(
       children: [
         Expanded(
@@ -504,11 +781,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text(
+                : Text(
                     'Ver e-mail\nsugerido',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: Responsive.fontSize(context, base: 14),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -532,11 +809,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text(
+                : Text(
                     'Gerar roteiro da\nreunião',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: Responsive.fontSize(context, base: 14),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -555,10 +832,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                 borderRadius: BorderRadius.circular(25),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Concluir Ação',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: Responsive.fontSize(context, base: 16),
                 fontWeight: FontWeight.bold,
               ),
             ),

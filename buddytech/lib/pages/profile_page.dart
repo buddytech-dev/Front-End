@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import '../pages/login_page.dart';
+import '../utils/responsive.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -148,8 +149,13 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildHeader() {
+    final isMobile = Responsive.isMobile(context);
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
+        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+      ),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
@@ -157,108 +163,184 @@ class _ProfilePageState extends State<ProfilePage> {
           end: Alignment.centerRight,
         ),
       ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
-            onPressed: () => Navigator.pop(context),
-          ),
-          const SizedBox(width: 16),
-          const Text(
-            'Perfil',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const Spacer(),
-          // Indicador online
-          Container(
-            width: 12,
-            height: 12,
-            decoration: const BoxDecoration(
-              color: Colors.greenAccent,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
-        padding: const EdgeInsets.all(40),
-        child: Column(
+      child: SafeArea(
+        bottom: false,
+        child: Row(
           children: [
-            const SizedBox(height: 20),
-
-            // Foto de perfil
-            _buildProfileImage(),
-
-            const SizedBox(height: 24),
-
-            // Nome e cargo
-            Text(
-              _userName,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+            IconButton(
+              icon: Icon(
+                Icons.arrow_back, 
+                color: Colors.white, 
+                size: isMobile ? 24 : 28,
               ),
+              onPressed: () => Navigator.pop(context),
             ),
-            const SizedBox(height: 4),
+            SizedBox(width: isMobile ? 8 : 16),
             Text(
-              _userRole,
+              'Perfil',
               style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
+                fontSize: Responsive.fontSize(context, base: 24),
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-
-            const SizedBox(height: 48),
-
-            // Botões de ação
-            _buildActionButton(
-              'Estatísticas',
-              Icons.bar_chart,
-              onTap: () => _showComingSoon('Estatísticas'),
+            const Spacer(),
+            // Indicador online
+            Container(
+              width: isMobile ? 10 : 12,
+              height: isMobile ? 10 : 12,
+              decoration: const BoxDecoration(
+                color: Colors.greenAccent,
+                shape: BoxShape.circle,
+              ),
             ),
-            const SizedBox(height: 16),
-            _buildActionButton(
-              'Leads Atendidos',
-              Icons.people_outline,
-              onTap: () => _showComingSoon('Leads Atendidos'),
-            ),
-            const SizedBox(height: 16),
-            _buildActionButton(
-              'Taxa de conversão',
-              Icons.trending_up,
-              onTap: () => _showComingSoon('Taxa de conversão'),
-            ),
-            const SizedBox(height: 16),
-            _buildActionButton(
-              'Configurações',
-              Icons.settings_outlined,
-              onTap: () => _showComingSoon('Configurações'),
-            ),
-            const SizedBox(height: 24),
-            _buildLogoutButton(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileImage() {
+  Widget _buildContent() {
+    final isMobile = Responsive.isMobile(context);
+    final isDesktop = Responsive.isDesktop(context);
+    final imageSize = Responsive.value<double>(context, mobile: 120, tablet: 140, desktop: 150);
+    
+    return Center(
+      child: Container(
+        constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+        padding: EdgeInsets.all(Responsive.padding(context)),
+        child: Column(
+          children: [
+            SizedBox(height: isMobile ? 12 : 20),
+
+            // Foto de perfil
+            _buildProfileImage(imageSize),
+
+            SizedBox(height: isMobile ? 16 : 24),
+
+            // Nome e cargo
+            Text(
+              _userName,
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, base: 28),
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _userRole,
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, base: 16),
+                color: Colors.grey.shade600,
+              ),
+            ),
+
+            SizedBox(height: isMobile ? 32 : 48),
+
+            // Botões de ação - Grid em desktop, lista em mobile
+            if (isDesktop)
+              _buildDesktopActions()
+            else
+              _buildMobileActions(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopActions() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                'Estatísticas',
+                Icons.bar_chart,
+                onTap: () => _showComingSoon('Estatísticas'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionButton(
+                'Leads Atendidos',
+                Icons.people_outline,
+                onTap: () => _showComingSoon('Leads Atendidos'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                'Taxa de conversão',
+                Icons.trending_up,
+                onTap: () => _showComingSoon('Taxa de conversão'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildActionButton(
+                'Configurações',
+                Icons.settings_outlined,
+                onTap: () => _showComingSoon('Configurações'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: 300,
+          child: _buildLogoutButton(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileActions() {
+    return Column(
+      children: [
+        _buildActionButton(
+          'Estatísticas',
+          Icons.bar_chart,
+          onTap: () => _showComingSoon('Estatísticas'),
+        ),
+        const SizedBox(height: 12),
+        _buildActionButton(
+          'Leads Atendidos',
+          Icons.people_outline,
+          onTap: () => _showComingSoon('Leads Atendidos'),
+        ),
+        const SizedBox(height: 12),
+        _buildActionButton(
+          'Taxa de conversão',
+          Icons.trending_up,
+          onTap: () => _showComingSoon('Taxa de conversão'),
+        ),
+        const SizedBox(height: 12),
+        _buildActionButton(
+          'Configurações',
+          Icons.settings_outlined,
+          onTap: () => _showComingSoon('Configurações'),
+        ),
+        const SizedBox(height: 20),
+        _buildLogoutButton(),
+      ],
+    );
+  }
+
+  Widget _buildProfileImage(double size) {
+    final buttonSize = size * 0.3;
+    
     return Stack(
       children: [
         Container(
-          width: 150,
-          height: 150,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(
@@ -271,18 +353,18 @@ class _ProfilePageState extends State<ProfilePage> {
                 ? Image.memory(
                     _profileImageBytes!,
                     fit: BoxFit.cover,
-                    width: 150,
-                    height: 150,
+                    width: size,
+                    height: size,
                   )
                 : _profileImageUrl != null
                     ? Image.network(
                         _profileImageUrl!,
                         fit: BoxFit.cover,
-                        width: 150,
-                        height: 150,
-                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(),
+                        width: size,
+                        height: size,
+                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
                       )
-                    : _buildDefaultAvatar(),
+                    : _buildDefaultAvatar(size),
           ),
         ),
         // Botão de editar foto
@@ -292,17 +374,17 @@ class _ProfilePageState extends State<ProfilePage> {
           child: GestureDetector(
             onTap: _pickAndUploadImage,
             child: Container(
-              width: 44,
-              height: 44,
+              width: buttonSize,
+              height: buttonSize,
               decoration: BoxDecoration(
                 color: const Color(0xFF3B82F6),
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.camera_alt,
                 color: Colors.white,
-                size: 20,
+                size: buttonSize * 0.5,
               ),
             ),
           ),
@@ -310,8 +392,8 @@ class _ProfilePageState extends State<ProfilePage> {
         // Loading overlay
         if (_isLoading)
           Container(
-            width: 150,
-            height: 150,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.5),
               shape: BoxShape.circle,
@@ -326,20 +408,22 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildDefaultAvatar() {
+  Widget _buildDefaultAvatar(double size) {
     return Container(
-      width: 150,
-      height: 150,
+      width: size,
+      height: size,
       color: Colors.grey.shade100,
       child: Icon(
         Icons.person_outline,
-        size: 80,
+        size: size * 0.5,
         color: Colors.grey.shade400,
       ),
     );
   }
 
   Widget _buildActionButton(String text, IconData icon, {required VoidCallback onTap}) {
+    final isMobile = Responsive.isMobile(context);
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -347,7 +431,10 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 16 : 24,
+            vertical: isMobile ? 14 : 18,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -356,14 +443,14 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: const Color(0xFF3B82F6), size: 22),
-              const SizedBox(width: 12),
+              Icon(icon, color: const Color(0xFF3B82F6), size: isMobile ? 20 : 22),
+              SizedBox(width: isMobile ? 8 : 12),
               Text(
                 text,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 16),
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF3B82F6),
+                  color: const Color(0xFF3B82F6),
                 ),
               ),
             ],
@@ -374,6 +461,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildLogoutButton() {
+    final isMobile = Responsive.isMobile(context);
+    
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -381,7 +470,10 @@ class _ProfilePageState extends State<ProfilePage> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 16 : 24,
+            vertical: isMobile ? 14 : 18,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -390,12 +482,12 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.logout, color: Colors.red.shade400, size: 22),
-              const SizedBox(width: 12),
+              Icon(Icons.logout, color: Colors.red.shade400, size: isMobile ? 20 : 22),
+              SizedBox(width: isMobile ? 8 : 12),
               Text(
                 'Sair',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: Responsive.fontSize(context, base: 16),
                   fontWeight: FontWeight.w500,
                   color: Colors.red.shade400,
                 ),
