@@ -179,19 +179,24 @@ class _HistoryPageState extends State<HistoryPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Estatísticas
-              _buildStatisticsCards(),
+              // Estatísticas - Responsivo
+              if (isMobile)
+                _buildStatisticsCardsMobile()
+              else
+                _buildStatisticsCards(),
 
-              SizedBox(height: isMobile ? 16 : 24),
+              SizedBox(height: isMobile ? 20 : 24),
 
               // Filtros
               _buildFilters(),
 
-              SizedBox(height: isMobile ? 12 : 16),
+              SizedBox(height: isMobile ? 16 : 16),
 
               // Lista de histórico
               _filteredHistory.isEmpty
                   ? _buildEmptyState()
+                  : isMobile
+                  ? _buildHistoryListMobile()
                   : _buildHistoryList(),
             ],
           ),
@@ -201,7 +206,6 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Widget _buildStatisticsCards() {
-    final isMobile = Responsive.isMobile(context);
     final total = _statistics['total'] ?? 0;
     final thisWeek = _statistics['thisWeek'] ?? 0;
     final thisMonth = _statistics['thisMonth'] ?? 0;
@@ -238,6 +242,86 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  Widget _buildStatisticsCardsMobile() {
+    final total = _statistics['total'] ?? 0;
+    final thisWeek = _statistics['thisWeek'] ?? 0;
+    final thisMonth = _statistics['thisMonth'] ?? 0;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.format_list_numbered,
+                label: 'Total',
+                value: total.toString(),
+                color: Colors.blue,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.calendar_today,
+                label: 'Esta semana',
+                value: thisWeek.toString(),
+                color: Colors.green,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.date_range,
+                label: 'Este mês',
+                value: thisMonth.toString(),
+                color: Colors.orange,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.trending_up,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${(thisWeek / (total > 0 ? total : 1) * 100).toInt()}%',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Text(
+                      'Esta semana',
+                      style: TextStyle(fontSize: 10, color: Colors.white70),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildStatCard({
     required IconData icon,
     required String label,
@@ -258,9 +342,17 @@ class _HistoryPageState extends State<HistoryPage> {
         ],
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 10),
           Text(
             value,
             style: TextStyle(
@@ -269,9 +361,13 @@ class _HistoryPageState extends State<HistoryPage> {
               color: color,
             ),
           ),
+          const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -280,6 +376,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Widget _buildFilters() {
+    final isMobile = Responsive.isMobile(context);
     final filters = [
       {'value': 'all', 'label': 'Todos', 'icon': Icons.all_inclusive},
       {'value': 'call', 'label': 'Ligações', 'icon': Icons.phone},
@@ -289,26 +386,70 @@ class _HistoryPageState extends State<HistoryPage> {
       {'value': 'negotiation', 'label': 'Negociações', 'icon': Icons.handshake},
     ];
 
+    if (isMobile) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: filters.map((filter) {
+            final isSelected = _selectedFilter == filter['value'];
+            return Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: FilterChip(
+                selected: isSelected,
+                avatar: Icon(
+                  filter['icon'] as IconData,
+                  size: 16,
+                  color: isSelected ? Colors.white : Colors.grey.shade600,
+                ),
+                label: Text(
+                  filter['label'] as String,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                onSelected: (_) {
+                  setState(() => _selectedFilter = filter['value'] as String);
+                },
+                selectedColor: AppColors.primary,
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : Colors.grey.shade700,
+                ),
+                checkmarkColor: Colors.white,
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: filters.map((filter) {
           final isSelected = _selectedFilter == filter['value'];
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 10),
             child: FilterChip(
               selected: isSelected,
-              label: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    filter['icon'] as IconData,
-                    size: 16,
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(filter['label'] as String),
-                ],
+              avatar: Icon(
+                filter['icon'] as IconData,
+                size: 18,
+                color: isSelected ? Colors.white : Colors.grey.shade600,
+              ),
+              label: Text(
+                filter['label'] as String,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               onSelected: (_) {
                 setState(() => _selectedFilter = filter['value'] as String);
@@ -319,6 +460,12 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
               checkmarkColor: Colors.white,
               backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                ),
+              ),
             ),
           );
         }).toList(),
@@ -335,14 +482,19 @@ class _HistoryPageState extends State<HistoryPage> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: Colors.blue.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.history, size: 64, color: Colors.grey.shade400),
+            child: Icon(
+              Icons.history,
+              size: 64,
+              color: Colors.blue.shade300,
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -350,14 +502,42 @@ class _HistoryPageState extends State<HistoryPage> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
+              color: Colors.grey.shade800,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
-            'Registre interações nos detalhes dos leads\npara vê-las aqui',
+            'Registre interações nos detalhes dos leads\npara vê-las aqui e acompanhar seu progresso',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.info, size: 16, color: Colors.blue.shade600),
+                const SizedBox(width: 8),
+                Text(
+                  'Comece registrando uma interação',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -414,6 +594,518 @@ class _HistoryPageState extends State<HistoryPage> {
           ],
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildHistoryListMobile() {
+    final items = _filteredHistory;
+
+    if (items.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Agrupa por data
+    final grouped = <String, List<InteractionHistory>>{};
+    for (final item in items) {
+      final dateKey = _formatDateKey(item.date);
+      grouped[dateKey] = [...(grouped[dateKey] ?? []), item];
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: grouped.entries.map((entry) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Separador de data
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12, top: 16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                ),
+                child: Text(
+                  entry.key,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
+
+            // Itens do dia
+            ...entry.value.map(
+              (item) => _buildHistoryItemMobileRefactored(item),
+            ),
+
+            const SizedBox(height: 8),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildHistoryItemMobileRefactored(InteractionHistory item) {
+    return GestureDetector(
+      onTap: () => _showHistoryDetailsMobile(item),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Ícone + Info + Hora + Score
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Ícone com cor
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _getTypeColor(item.interactionType).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    item.typeIcon,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.leadName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _getTypeColor(item.interactionType)
+                                  .withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              item.typeLabel,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: _getTypeColor(item.interactionType),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            DateFormat('HH:mm').format(item.date),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Score badge
+                if (item.scoreAfter != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue.shade400, Colors.blue.shade600],
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${item.scoreAfter}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Descrição
+            Text(
+              item.content,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                height: 1.5,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            // IA Sugestão (se houver)
+            if (item.aiSuggestion != null && item.aiSuggestion!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.purple.shade100,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline,
+                      size: 16,
+                      color: Colors.purple.shade600,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.aiSuggestion!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.purple.shade700,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHistoryDetailsMobile(InteractionHistory item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _getTypeColor(
+                            item.interactionType,
+                          ).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item.typeIcon,
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.leadName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            item.typeLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+
+            // Conteúdo
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Info básica
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                DateFormat(
+                                  'dd/MM/yyyy HH:mm',
+                                ).format(item.date),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (item.scoreAfter != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.blue.shade400,
+                                    Colors.blue.shade600,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Score',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${item.scoreAfter}',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Conteúdo
+                      Text(
+                        'Detalhes da Interação',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Text(
+                          item.content,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade700,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+
+                      // Sugestão da IA
+                      if (item.aiSuggestion != null &&
+                          item.aiSuggestion!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Sugestão da IA',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.purple.shade50,
+                                Colors.blue.shade50,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.purple.shade200),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  Icons.psychology,
+                                  size: 16,
+                                  color: Colors.purple.shade600,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  item.aiSuggestion!,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.purple.shade700,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      // Probabilidade
+                      if (item.probabilityAfter != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.trending_up,
+                                size: 16,
+                                color: Colors.green.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Probabilidade de Fechamento',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${(item.probabilityAfter! * 100).toInt()}%',
+                                      style: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green.shade600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -519,55 +519,79 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ),
           SizedBox(height: isMobile ? 16 : 20),
 
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              // Score (usa variável de estado)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final metricsItems = <Widget>[];
+
               if (_currentScore != null)
-                _buildMetricItem(
-                  icon: Icons.score,
-                  label: 'Score',
-                  value: _currentScore.toString(),
-                  color: Colors.blue,
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.score,
+                    label: 'Score',
+                    value: _currentScore.toString(),
+                    color: Colors.blue,
+                  ),
+                );
 
-              // Probabilidade (usa variável de estado)
               if (_probabilityOfClosing != null)
-                _buildMetricItem(
-                  icon: Icons.trending_up,
-                  label: 'Probabilidade',
-                  value: '${(_probabilityOfClosing! * 100).toInt()}%',
-                  color: _getProbabilityColor(_probabilityOfClosing!),
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.trending_up,
+                    label: 'Probabilidade',
+                    value: '${(_probabilityOfClosing! * 100).toInt()}%',
+                    color: _getProbabilityColor(_probabilityOfClosing!),
+                  ),
+                );
 
-              // Prioridade (usa variável de estado)
               if (_priority != null)
-                _buildMetricItem(
-                  icon: Icons.flag,
-                  label: 'Prioridade',
-                  value: _priority!,
-                  color: _getPriorityColor(_priority!),
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.flag,
+                    label: 'Prioridade',
+                    value: _priority!,
+                    color: _getPriorityColor(_priority!),
+                  ),
+                );
 
-              // Fonte
               if (widget.leadSource != null && widget.leadSource!.isNotEmpty)
-                _buildMetricItem(
-                  icon: Icons.source,
-                  label: 'Fonte',
-                  value: widget.leadSource!,
-                  color: Colors.purple,
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.source,
+                    label: 'Fonte',
+                    value: widget.leadSource!,
+                    color: Colors.purple,
+                  ),
+                );
 
-              // Interações (usa variável de estado)
               if (_interactionsCount != null)
-                _buildMetricItem(
-                  icon: Icons.chat,
-                  label: 'Interações',
-                  value: _interactionsCount.toString(),
-                  color: Colors.teal,
-                ),
-            ],
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.chat,
+                    label: 'Interações',
+                    value: _interactionsCount.toString(),
+                    color: Colors.teal,
+                  ),
+                );
+
+              // Número de colunas baseado na largura disponível
+              final itemWidth = isMobile ? 140 : 160;
+              final spacing = 16.0;
+              final availableWidth = constraints.maxWidth;
+              final colsCount =
+                  ((availableWidth + spacing) / (itemWidth + spacing))
+                      .floor()
+                      .clamp(1, 5);
+
+              return GridView.count(
+                crossAxisCount: colsCount,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: (itemWidth) / (isMobile ? 80 : 90),
+                children: metricsItems,
+              );
+            },
           ),
         ],
       ),
@@ -1795,6 +1819,339 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   /// Exibe o diálogo para registrar uma interação
   void _showInteractionDialog(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
+    if (isMobile) {
+      _showInteractionBottomSheet(context);
+    } else {
+      _showInteractionDialogDesktop(context);
+    }
+  }
+
+  void _showInteractionBottomSheet(BuildContext context) {
+    String selectedType = 'call';
+    final notesController = TextEditingController();
+    bool isSubmitting = false;
+
+    final interactionTypes = [
+      {'value': 'call', 'label': 'Ligação', 'icon': Icons.phone},
+      {'value': 'email', 'label': 'E-mail', 'icon': Icons.email},
+      {'value': 'meeting', 'label': 'Reunião', 'icon': Icons.event},
+      {'value': 'visit', 'label': 'Visita', 'icon': Icons.location_on},
+      {'value': 'proposal', 'label': 'Proposta', 'icon': Icons.description},
+      {'value': 'negotiation', 'label': 'Negociação', 'icon': Icons.handshake},
+      {'value': 'follow_up', 'label': 'Follow-up', 'icon': Icons.update},
+      {'value': 'demo', 'label': 'Demonstração', 'icon': Icons.play_circle},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setDialogState) => SafeArea(
+          bottom: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.add_task,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Registrar Interação',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                // Conteúdo
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tipo de Interação',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: interactionTypes.map((type) {
+                              final isSelected = selectedType == type['value'];
+                              return GestureDetector(
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedType = type['value'] as String;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Colors.green.shade100
+                                        : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.green
+                                          : Colors.grey.shade300,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        type['icon'] as IconData,
+                                        size: 16,
+                                        color: isSelected
+                                            ? Colors.green.shade700
+                                            : Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        type['label'] as String,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isSelected
+                                              ? Colors.green.shade700
+                                              : Colors.grey.shade700,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Text(
+                                'Descrição da Interação',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const Text(
+                                ' *',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: notesController,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Descreva o que foi conversado, resultado da interação...',
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade500,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Colors.green,
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.all(12),
+                            ),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.blue.shade700,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Ao registrar uma interação, a IA irá recalcular o score e as sugestões para este lead.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Botões
+                Container(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 8,
+                    bottom: 64 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.pop(sheetContext),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: isSubmitting
+                                ? null
+                                : () {
+                                    if (notesController.text.trim().isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Por favor, descreva a interação',
+                                          ),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (isSubmitting) return;
+                                    setDialogState(() => isSubmitting = true);
+
+                                    final typeToSend = selectedType;
+                                    final notesToSend = notesController.text;
+
+                                    Navigator.pop(sheetContext);
+
+                                    _registerInteraction(
+                                      typeToSend,
+                                      notesToSend,
+                                    );
+                                  },
+                            icon: isSubmitting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.check),
+                            label: Text(
+                              isSubmitting ? 'Enviando...' : 'Registrar',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showInteractionDialogDesktop(BuildContext context) {
     String selectedType = 'call';
     final notesController = TextEditingController();
     bool isSubmitting = false;
@@ -1990,18 +2347,14 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                         return;
                       }
 
-                      // Previne cliques duplos - desabilita o botão imediatamente
                       if (isSubmitting) return;
                       setDialogState(() => isSubmitting = true);
 
-                      // Captura os valores antes de fechar
                       final typeToSend = selectedType;
                       final notesToSend = notesController.text;
 
-                      // Fecha o dialog primeiro
                       Navigator.pop(dialogContext);
 
-                      // Depois registra a interação (sem await aqui)
                       _registerInteraction(typeToSend, notesToSend);
                     },
               icon: isSubmitting

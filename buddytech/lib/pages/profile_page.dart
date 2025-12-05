@@ -273,7 +273,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _buildActionButton(
                 'Estatísticas',
                 Icons.bar_chart,
-                onTap: () => _showComingSoon('Estatísticas'),
+                onTap: _showStatistics,
               ),
             ),
             const SizedBox(width: 16),
@@ -281,7 +281,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _buildActionButton(
                 'Leads Atendidos',
                 Icons.people_outline,
-                onTap: () => _showComingSoon('Leads Atendidos'),
+                onTap: _showAttendedLeads,
               ),
             ),
           ],
@@ -293,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _buildActionButton(
                 'Taxa de conversão',
                 Icons.trending_up,
-                onTap: () => _showComingSoon('Taxa de conversão'),
+                onTap: _showConversionRate,
               ),
             ),
             const SizedBox(width: 16),
@@ -301,7 +301,7 @@ class _ProfilePageState extends State<ProfilePage> {
               child: _buildActionButton(
                 'Configurações',
                 Icons.settings_outlined,
-                onTap: () => _showComingSoon('Configurações'),
+                onTap: _showSettings,
               ),
             ),
           ],
@@ -318,25 +318,25 @@ class _ProfilePageState extends State<ProfilePage> {
         _buildActionButton(
           'Estatísticas',
           Icons.bar_chart,
-          onTap: () => _showComingSoon('Estatísticas'),
+          onTap: _showStatistics,
         ),
         const SizedBox(height: 12),
         _buildActionButton(
           'Leads Atendidos',
           Icons.people_outline,
-          onTap: () => _showComingSoon('Leads Atendidos'),
+          onTap: _showAttendedLeads,
         ),
         const SizedBox(height: 12),
         _buildActionButton(
           'Taxa de conversão',
           Icons.trending_up,
-          onTap: () => _showComingSoon('Taxa de conversão'),
+          onTap: _showConversionRate,
         ),
         const SizedBox(height: 12),
         _buildActionButton(
           'Configurações',
           Icons.settings_outlined,
-          onTap: () => _showComingSoon('Configurações'),
+          onTap: _showSettings,
         ),
         const SizedBox(height: 20),
         _buildLogoutButton(),
@@ -517,11 +517,315 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature - Em breve!'),
-        duration: const Duration(seconds: 2),
+  void _showStatistics() {
+    _showModalSheet(
+      title: 'Estatísticas',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatCard('Total de vendas', 'R\$ 12.500,00', Colors.green),
+              const SizedBox(height: 16),
+              _buildStatCard('Conversões', '45%', Colors.blue),
+              const SizedBox(height: 16),
+              _buildStatCard('Ticket médio', 'R\$ 278,00', Colors.orange),
+              const SizedBox(height: 16),
+              _buildStatCard('Clientes ativos', '89', Colors.purple),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAttendedLeads() {
+    _showModalSheet(
+      title: 'Leads Atendidos',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              _buildLeadItem(
+                'João Silva',
+                'Contato realizado em 15/12/2024',
+                Icons.check_circle,
+                Colors.green,
+              ),
+              const SizedBox(height: 12),
+              _buildLeadItem(
+                'Maria Santos',
+                'Aguardando resposta',
+                Icons.schedule,
+                Colors.orange,
+              ),
+              const SizedBox(height: 12),
+              _buildLeadItem(
+                'Pedro Costa',
+                'Contactado em 14/12/2024',
+                Icons.check_circle,
+                Colors.green,
+              ),
+              const SizedBox(height: 12),
+              _buildLeadItem(
+                'Ana Lima',
+                'Novo lead',
+                Icons.fiber_new,
+                Colors.blue,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showConversionRate() {
+    _showModalSheet(
+      title: 'Taxa de Conversão',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildConversionStat('Este mês', '45%', Colors.green),
+              const SizedBox(height: 16),
+              _buildConversionStat('Mês anterior', '38%', Colors.blue),
+              const SizedBox(height: 16),
+              _buildConversionStat('Média geral', '42%', Colors.grey),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.trending_up, color: Colors.green),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Você está 7% acima da média!',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSettings() {
+    _showModalSheet(
+      title: 'Configurações',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSettingItem('Notificações', Icons.notifications_outlined),
+              const Divider(height: 24),
+              _buildSettingItem('Privacidade', Icons.lock_outlined),
+              const Divider(height: 24),
+              _buildSettingItem(
+                'Preferências de exibição',
+                Icons.display_settings,
+              ),
+              const Divider(height: 24),
+              _buildSettingItem('Segurança da conta', Icons.security),
+              const Divider(height: 24),
+              _buildSettingItem('Sobre', Icons.info_outlined),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showModalSheet({required String title, required Widget child}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: child),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          Icon(Icons.trending_up, color: color, size: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeadItem(
+    String name,
+    String status,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConversionStat(String period, String rate, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            period,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              rate,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey.shade600),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        ],
       ),
     );
   }

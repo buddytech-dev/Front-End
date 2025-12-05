@@ -9,6 +9,8 @@ import '../utils/responsive.dart';
 import 'history_page.dart';
 import 'ranking_page.dart';
 import 'profile_page.dart';
+import 'seller_dashboard_page.dart';
+import 'missions_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -117,17 +119,19 @@ class _HomePageState extends State<HomePage> {
 
           // CONTEÚDO PRINCIPAL
           Expanded(
-            child: isMobile
-                ? IndexedStack(
-                    index: _selectedNavIndex,
-                    children: [
-                      SingleChildScrollView(child: _buildMainContent(context)),
-                      HistoryPage(embedded: true),
-                      RankingPage(embedded: true),
-                      ProfilePage(embedded: true),
-                    ],
-                  )
-                : SingleChildScrollView(child: _buildMainContent(context)),
+            child: IndexedStack(
+              index: _selectedNavIndex,
+              children: [
+                SingleChildScrollView(
+                  child: _buildMainContent(context),
+                ), // 0 - Home
+                HistoryPage(embedded: true), // 1 - Histórico
+                RankingPage(embedded: true), // 2 - Ranking
+                MissionsPage(embedded: true), // 3 - Missões
+                ProfilePage(embedded: true), // 4 - Perfil
+                SellerDashboardPage(embedded: true), // 5 - Dashboard
+              ],
+            ),
           ),
         ],
       ),
@@ -177,10 +181,11 @@ class _HomePageState extends State<HomePage> {
 
             // Menu items
             _buildDrawerItem('Home', Icons.home, 0),
-            _buildDrawerItem('Dashboard', Icons.dashboard, 4),
+            _buildDrawerItem('Dashboard', Icons.dashboard, 5),
             _buildDrawerItem('Histórico', Icons.history, 1),
             _buildDrawerItem('Ranking', Icons.leaderboard, 2),
-            _buildDrawerItem('Perfil', Icons.person, 3),
+            _buildDrawerItem('Missões', Icons.assignment, 3),
+            _buildDrawerItem('Perfil', Icons.person, 4),
 
             // Admin - só aparece se for admin
             if (_isAdmin) ...[
@@ -247,28 +252,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onNavTap(int index) {
-    final isMobile = Responsive.isMobile(context);
-
-    if (isMobile) {
-      setState(() {
-        _selectedNavIndex = index;
-      });
-      return;
-    }
-
-    if (index == 1) {
-      Navigator.pushNamed(context, AppRoutes.history);
-    } else if (index == 2) {
-      Navigator.pushNamed(context, AppRoutes.ranking);
-    } else if (index == 3) {
-      Navigator.pushNamed(context, AppRoutes.profile);
-    } else if (index == 4) {
-      Navigator.pushNamed(context, AppRoutes.sellerDashboard);
-    } else {
-      setState(() {
-        _selectedNavIndex = index;
-      });
-    }
+    setState(() {
+      _selectedNavIndex = index;
+    });
   }
 
   /// Retorna o título da página baseado no índice selecionado
@@ -281,7 +267,11 @@ class _HomePageState extends State<HomePage> {
       case 2:
         return 'Ranking';
       case 3:
+        return 'Missões';
+      case 4:
         return 'Perfil';
+      case 5:
+        return 'Dashboard';
       default:
         return 'Home';
     }
@@ -455,23 +445,40 @@ class _HomePageState extends State<HomePage> {
 
   Widget _navItem(String text, int index) {
     final isActive = _selectedNavIndex == index;
-    return GestureDetector(
+    return _NavItemContent(
+      text: text,
+      index: index,
+      isActive: isActive,
       onTap: () => _onNavTap(index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(25),
-          border: isActive
-              ? null
-              : Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-        ),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 15,
-            color: isActive ? const Color(0xFF2563EB) : Colors.white,
-            fontWeight: FontWeight.w600,
+    );
+  }
+
+  Widget _NavItemContent({
+    required String text,
+    required int index,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(25),
+            border: !isActive
+                ? Border.all(color: Colors.white.withOpacity(0.3), width: 1)
+                : null,
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 15,
+              color: isActive ? const Color(0xFF2563EB) : Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -519,7 +526,8 @@ class _HomePageState extends State<HomePage> {
               _buildBottomNavItem(icon: Icons.home, index: 0),
               _buildBottomNavItem(icon: Icons.history, index: 1),
               _buildBottomNavItem(icon: Icons.leaderboard, index: 2),
-              _buildBottomNavItem(icon: Icons.person, index: 3),
+              _buildBottomNavItem(icon: Icons.assignment, index: 3),
+              _buildBottomNavItem(icon: Icons.person, index: 4),
             ],
           ),
         ),
