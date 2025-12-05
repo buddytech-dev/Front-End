@@ -4,6 +4,7 @@ import '../pages/home_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/history_page.dart';
 import '../pages/client_details_page.dart';
+import '../pages/seller_dashboard_page.dart';
 import '../pages/admin_dashboard_page.dart';
 import '../pages/admin_users_page.dart';
 import '../pages/admin_accounts_page.dart';
@@ -111,6 +112,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String history = '/history';
   static const String clientDetails = '/client-details';
+  static const String sellerDashboard = '/seller-dashboard';
   
   // Área administrativa
   static const String adminDashboard = '/admin';
@@ -139,6 +141,9 @@ class AppRouter {
       case AppRoutes.history:
         return _buildRoute(const HistoryPage(), settings);
         
+      case AppRoutes.sellerDashboard:
+        return _buildRoute(const SellerDashboardPage(), settings);
+
       case AppRoutes.clientDetails:
         final args = settings.arguments as ClientDetailsArgs;
         return _buildRoute(

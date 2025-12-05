@@ -162,6 +162,7 @@ class _HomePageState extends State<HomePage> {
 
             // Menu items
             _buildDrawerItem('Home', Icons.home, 0),
+            _buildDrawerItem('Dashboard', Icons.dashboard, 4),
             _buildDrawerItem('Histórico', Icons.history, 1),
             _buildDrawerItem('Ranking', Icons.leaderboard, 2),
             _buildDrawerItem('Perfil', Icons.person, 3),
@@ -238,6 +239,8 @@ class _HomePageState extends State<HomePage> {
       Navigator.pushNamed(context, AppRoutes.history);
     } else if (index == 3) {
       Navigator.pushNamed(context, AppRoutes.profile);
+    } else if (index == 4) {
+      Navigator.pushNamed(context, AppRoutes.sellerDashboard);
     } else {
       setState(() {
         _selectedNavIndex = index;
@@ -307,6 +310,8 @@ class _HomePageState extends State<HomePage> {
               Row(
                 children: [
                   _navItem('Home', 0),
+                  const SizedBox(width: 16),
+                  _navItem('Dashboard', 4),
                   const SizedBox(width: 16),
                   _navItem('Histórico', 1),
                   const SizedBox(width: 16),
