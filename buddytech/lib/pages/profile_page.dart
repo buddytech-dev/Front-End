@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
-import '../pages/login_page.dart';
+import '../config/app_colors.dart';
+import '../routes/routes.dart';
 import '../utils/responsive.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -121,9 +122,9 @@ class _ProfilePageState extends State<ProfilePage> {
     
     if (!mounted) return;
     
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushNamedAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      AppRoutes.login,
       (_) => false,
     );
   }
@@ -157,11 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
         vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppColors.primaryGradient,
       ),
       child: SafeArea(
         bottom: false,

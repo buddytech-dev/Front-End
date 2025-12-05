@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../pages/login_page.dart';
-import '../pages/client_details_page.dart';
-import '../pages/profile_page.dart';
-import '../pages/history_page.dart';
-import '../pages/admin_dashboard_page.dart';
+import '../config/app_colors.dart';
+import '../routes/routes.dart';
 import '../models/client_model.dart';
 import '../services/client_service.dart';
 import '../services/admin_service.dart';
@@ -63,9 +60,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> logout(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
 
-    Navigator.pushAndRemoveUntil(
+    Navigator.pushNamedAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
+      AppRoutes.login,
       (_) => false,
     );
   }
@@ -104,9 +101,7 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-                ),
+                gradient: AppColors.primaryGradient,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,21 +143,18 @@ class _HomePageState extends State<HomePage> {
               ListTile(
                 leading: const Icon(
                   Icons.admin_panel_settings,
-                  color: Color(0xFF3B82F6),
+                  color: AppColors.primary,
                 ),
                 title: const Text(
                   'Painel Admin',
                   style: TextStyle(
-                    color: Color(0xFF3B82F6),
+                    color: AppColors.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
-                  );
+                  Navigator.pushNamed(context, AppRoutes.adminDashboard);
                 },
               ),
             ],
@@ -194,17 +186,17 @@ class _HomePageState extends State<HomePage> {
     return ListTile(
       leading: Icon(
         icon,
-        color: isSelected ? const Color(0xFF3B82F6) : Colors.grey.shade600,
+        color: isSelected ? AppColors.primary : Colors.grey.shade600,
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: isSelected ? const Color(0xFF3B82F6) : Colors.grey.shade800,
+          color: isSelected ? AppColors.primary : Colors.grey.shade800,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       selected: isSelected,
-      selectedTileColor: const Color(0xFF3B82F6).withOpacity(0.1),
+      selectedTileColor: AppColors.primary.withOpacity(0.1),
       onTap: () {
         Navigator.pop(context);
         _onNavTap(index);
@@ -214,15 +206,9 @@ class _HomePageState extends State<HomePage> {
 
   void _onNavTap(int index) {
     if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const HistoryPage()),
-      );
+      Navigator.pushNamed(context, AppRoutes.history);
     } else if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfilePage()),
-      );
+      Navigator.pushNamed(context, AppRoutes.profile);
     } else {
       setState(() {
         _selectedNavIndex = index;
@@ -240,11 +226,7 @@ class _HomePageState extends State<HomePage> {
         vertical: isMobile ? 12 : 16,
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppColors.primaryGradient,
       ),
       child: SafeArea(
         bottom: false,
@@ -307,10 +289,7 @@ class _HomePageState extends State<HomePage> {
                     const SizedBox(width: 16),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const AdminDashboardPage()),
-                        );
+                        Navigator.pushNamed(context, AppRoutes.adminDashboard);
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -320,13 +299,13 @@ class _HomePageState extends State<HomePage> {
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.admin_panel_settings, color: Color(0xFF2563EB), size: 18),
+                            Icon(Icons.admin_panel_settings, color: AppColors.primaryDark, size: 18),
                             SizedBox(width: 6),
                             Text(
                               'Admin',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF2563EB),
+                                color: AppColors.primaryDark,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -793,23 +772,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _navigateToDetails(ClientModel client) {
-    Navigator.push(
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (_) => ClientDetailsPage(
-          companyName: client.companyName,
-          companyEmail: client.companyEmail,
-          contactName: client.contactName,
-          contactPhone: client.contactPhone,
-          status: client.status,
-          lastInteraction: client.lastInteraction,
-          rank: client.rank,
-          logoColor: client.logoColor,
-          logoIcon: client.logoIcon,
-          aiSummary: client.aiSummary,
-          recommendedActions: client.recommendedActions,
-        ),
-      ),
+      AppRoutes.clientDetails,
+      arguments: ClientDetailsArgs.fromClientModel(client),
     );
   }
 }

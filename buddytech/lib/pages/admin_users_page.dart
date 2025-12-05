@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 import '../services/admin_service.dart';
 import '../utils/responsive.dart';
 
@@ -72,11 +73,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
         vertical: isMobile ? 12 : 16,
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppColors.primaryGradient,
       ),
       child: SafeArea(
         bottom: false,

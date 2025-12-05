@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 import '../utils/responsive.dart';
 
 /// Modelo para representar uma ação concluída
@@ -136,11 +137,7 @@ class _HistoryPageState extends State<HistoryPage> {
         vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppColors.primaryGradient,
       ),
       child: SafeArea(
         bottom: false,

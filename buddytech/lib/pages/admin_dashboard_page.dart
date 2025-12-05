@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
+import '../routes/routes.dart';
 import '../services/admin_service.dart';
 import '../utils/responsive.dart';
-import 'admin_users_page.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -71,11 +72,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         vertical: isMobile ? 12 : 16,
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppColors.primaryGradient,
       ),
       child: SafeArea(
         bottom: false,
@@ -132,9 +129,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(24),
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-                ),
+                gradient: AppColors.primaryGradient,
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,10 +242,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   void _onNavTap(int index) {
     if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminUsersPage()),
-      );
+      Navigator.pushNamed(context, AppRoutes.adminUsers);
     } else {
       setState(() {
         _selectedNavIndex = index;

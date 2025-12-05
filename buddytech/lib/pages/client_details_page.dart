@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../config/app_colors.dart';
 import '../services/client_service.dart';
 import '../utils/responsive.dart';
 
@@ -69,11 +70,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
         vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
       ),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        gradient: AppColors.primaryGradient,
       ),
       child: SafeArea(
         bottom: false,
