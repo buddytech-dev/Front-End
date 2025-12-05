@@ -31,6 +31,11 @@ class AppTheme {
       foregroundColor: AppColors.textPrimary,
       elevation: 0,
       centerTitle: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          bottomRight: Radius.circular(24),
+        ),
+      ),
       titleTextStyle: TextStyle(
         color: AppColors.textPrimary,
         fontSize: 18,

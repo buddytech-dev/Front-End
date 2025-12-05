@@ -286,7 +286,10 @@ class _HomePageState extends State<HomePage> {
         horizontal: horizontalPadding,
         vertical: isMobile ? 12 : 16,
       ),
-      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+      decoration: const BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.only(bottomRight: Radius.circular(50)),
+      ),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -517,7 +520,13 @@ class _HomePageState extends State<HomePage> {
     return SafeArea(
       top: false,
       child: Container(
-        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        decoration: const BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Row(
