@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../models/interaction_history.dart';
 import '../services/client_service.dart';
+import '../services/api_service.dart';
+import '../services/interaction_history_service.dart';
 import '../utils/responsive.dart';
 
 class ClientDetailsPage extends StatefulWidget {
+  final String leadId;
   final String companyName;
   final String companyEmail;
   final String contactName;
@@ -34,6 +38,7 @@ class ClientDetailsPage extends StatefulWidget {
 
   const ClientDetailsPage({
     super.key,
+    required this.leadId,
     required this.companyName,
     required this.companyEmail,
     required this.contactName,
@@ -66,12 +71,85 @@ class ClientDetailsPage extends StatefulWidget {
 
 class _ClientDetailsPageState extends State<ClientDetailsPage> {
   final ClientService _clientService = ClientService();
+  final ApiService _apiService = ApiService();
+  final InteractionHistoryService _historyService = InteractionHistoryService();
   bool _isLoadingEmail = false;
   bool _isLoadingScript = false;
+  bool _isLoadingInteraction = false;
+  bool _isRefreshing = false;
+  bool _interactionInProgress = false; // Flag extra para prevenir chamadas duplicadas
+
+  // Estados mutáveis para dados da IA (podem ser atualizados após interação)
+  late int? _currentScore;
+  late double? _probabilityOfClosing;
+  late String? _priority;
+  late String? _nextStepSuggestion;
+  late String? _suggestedContactType;
+  late int? _interactionsCount;
+  late String _aiSummary;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa com os valores passados pelo widget
+    _currentScore = widget.currentScore;
+    _probabilityOfClosing = widget.probabilityOfClosing;
+    _priority = widget.priority;
+    _nextStepSuggestion = widget.nextStepSuggestion;
+    _suggestedContactType = widget.suggestedContactType;
+    _interactionsCount = widget.interactionsCount;
+    _aiSummary = widget.aiSummary;
+  }
+
+  /// Atualiza os dados da lead buscando da API
+  Future<void> _refreshLeadData() async {
+    print('🔄 Iniciando _refreshLeadData...');
+    setState(() => _isRefreshing = true);
+
+    try {
+      final response = await _apiService.getLeadById(widget.leadId);
+      
+      print('📡 Response isSuccess: ${response.isSuccess}');
+      print('📡 Response data: ${response.data}');
+      
+      if (response.isSuccess && response.data != null) {
+        final lead = response.data!;
+        print('📊 Antes do setState:');
+        print('   _currentScore: $_currentScore');
+        print('   _interactionsCount: $_interactionsCount');
+        
+        setState(() {
+          _currentScore = lead.currentScore;
+          _probabilityOfClosing = lead.probabilityOfClosing;
+          _priority = lead.priorityText;
+          _nextStepSuggestion = lead.nextStepSuggestion;
+          _suggestedContactType = lead.suggestedContactType;
+          _interactionsCount = lead.interactionsCount;
+          _aiSummary = lead.nextStepSuggestion ?? lead.description ?? widget.aiSummary;
+        });
+        
+        print('📊 Depois do setState:');
+        print('   _currentScore: $_currentScore');
+        print('   _interactionsCount: $_interactionsCount');
+        print('✅ setState executado com sucesso!');
+      } else {
+        print('❌ Response falhou ou data é null');
+      }
+    } catch (e) {
+      print('❌ Erro ao atualizar dados: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ BUILD: score=$_currentScore, interações=$_interactionsCount');
+    
     return Scaffold(
+      key: ValueKey('details_${_currentScore}_${_interactionsCount}_${_probabilityOfClosing}'),
       backgroundColor: Colors.white,
       body: Column(
         children: [
@@ -372,19 +450,22 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   /// Card com métricas da lead (Score, Probabilidade, Prioridade, Fonte)
   Widget _buildLeadMetricsCard() {
+    print('🎨 Rebuild _buildLeadMetricsCard: score=$_currentScore, interações=$_interactionsCount');
+    
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
 
-    // Verifica se há métricas para exibir
+    // Verifica se há métricas para exibir (usa variáveis de estado)
     final hasMetrics =
-        widget.currentScore != null ||
-        widget.probabilityOfClosing != null ||
-        widget.priority != null ||
+        _currentScore != null ||
+        _probabilityOfClosing != null ||
+        _priority != null ||
         widget.leadSource != null;
 
     if (!hasMetrics) return const SizedBox.shrink();
 
     return Container(
+      key: ValueKey('metrics_${_currentScore}_${_interactionsCount}'),
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -400,13 +481,28 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Métricas da Lead',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 18),
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            children: [
+              Text(
+                'Métricas da Lead',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 18),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              if (_isRefreshing) ...[
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ],
           ),
           SizedBox(height: isMobile ? 16 : 20),
 
@@ -414,31 +510,31 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
             spacing: 16,
             runSpacing: 16,
             children: [
-              // Score
-              if (widget.currentScore != null)
+              // Score (usa variável de estado)
+              if (_currentScore != null)
                 _buildMetricItem(
                   icon: Icons.score,
                   label: 'Score',
-                  value: widget.currentScore.toString(),
+                  value: _currentScore.toString(),
                   color: Colors.blue,
                 ),
 
-              // Probabilidade
-              if (widget.probabilityOfClosing != null)
+              // Probabilidade (usa variável de estado)
+              if (_probabilityOfClosing != null)
                 _buildMetricItem(
                   icon: Icons.trending_up,
                   label: 'Probabilidade',
-                  value: '${(widget.probabilityOfClosing! * 100).toInt()}%',
-                  color: _getProbabilityColor(widget.probabilityOfClosing!),
+                  value: '${(_probabilityOfClosing! * 100).toInt()}%',
+                  color: _getProbabilityColor(_probabilityOfClosing!),
                 ),
 
-              // Prioridade
-              if (widget.priority != null)
+              // Prioridade (usa variável de estado)
+              if (_priority != null)
                 _buildMetricItem(
                   icon: Icons.flag,
                   label: 'Prioridade',
-                  value: widget.priority!,
-                  color: _getPriorityColor(widget.priority!),
+                  value: _priority!,
+                  color: _getPriorityColor(_priority!),
                 ),
 
               // Fonte
@@ -450,12 +546,12 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   color: Colors.purple,
                 ),
 
-              // Interações
-              if (widget.interactionsCount != null)
+              // Interações (usa variável de estado)
+              if (_interactionsCount != null)
                 _buildMetricItem(
                   icon: Icons.chat,
                   label: 'Interações',
-                  value: widget.interactionsCount.toString(),
+                  value: _interactionsCount.toString(),
                   color: Colors.teal,
                 ),
             ],
@@ -758,19 +854,20 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
-      case 'urgente':
       case 'urgent':
+      case 'urgente':
         return Colors.red;
-      case 'alta':
       case 'high':
+      case 'alta':
         return Colors.orange;
-      case 'média':
       case 'medium':
-        return Colors.amber;
-      case 'baixa':
+      case 'média':
+        return Colors.blue;
       case 'low':
-      default:
+      case 'baixa':
         return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -1045,32 +1142,227 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Resumo de análise IA',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 16),
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          // Header com ícone de IA
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.psychology,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Análise de Inteligência Artificial',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 16),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 16 : 20),
+
+          // Score e Probabilidade em destaque
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF6366F1).withOpacity(0.1),
+                  const Color(0xFF8B5CF6).withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.2)),
+            ),
+            child: Stack(
+              children: [
+                // Indicador de atualização
+                if (_isRefreshing)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: const Color(0xFF6366F1),
+                      ),
+                    ),
+                  ),
+                Row(
+                  children: [
+                    // Score
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            '${_currentScore ?? 0}',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 32),
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF6366F1),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Score da Lead',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 12),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                    ),
+                    // Probabilidade
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            '${((_probabilityOfClosing ?? 0) * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 32),
+                              fontWeight: FontWeight.bold,
+                              color: _getProbabilityColor(_probabilityOfClosing ?? 0),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Prob. Fechamento',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 12),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                    ),
+                    // Prioridade
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _getPriorityColor(_priority ?? 'Normal'),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _priority ?? 'Normal',
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(context, base: 12),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Prioridade',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 12),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Text(
-              widget.aiSummary,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 14),
-                color: Colors.grey.shade700,
-                height: 1.5,
+
+          SizedBox(height: isMobile ? 16 : 20),
+
+          // Próximo Passo Sugerido pela IA
+          if (_nextStepSuggestion != null && _nextStepSuggestion!.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb,
+                        color: Colors.amber.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Sugestão da IA',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 14),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _nextStepSuggestion!,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, base: 14),
+                      color: Colors.amber.shade900,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
+
+          // Se não tiver sugestão, mostra o aiSummary
+          if ((_nextStepSuggestion == null || _nextStepSuggestion!.isEmpty) && 
+              _aiSummary.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                _aiSummary,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 14),
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1079,6 +1371,76 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   Widget _buildRecommendedActionsCard() {
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
+
+    // Lista de ações baseadas nos dados da IA
+    final List<Map<String, dynamic>> actions = [];
+
+    // Adiciona ação baseada na sugestão de tipo de contato
+    if (_suggestedContactType != null && 
+        _suggestedContactType!.isNotEmpty &&
+        _suggestedContactType != 'N/A') {
+      actions.add({
+        'icon': Icons.contact_phone,
+        'title': 'Tipo de Contato Sugerido',
+        'description': _suggestedContactType!,
+        'color': Colors.green,
+      });
+    }
+
+    // Adiciona ação baseada na prioridade
+    if (_priority != null) {
+      final priorityLower = _priority!.toLowerCase();
+      if (priorityLower == 'high' || priorityLower == 'urgent' || priorityLower == 'alta' || priorityLower == 'urgente') {
+        actions.add({
+          'icon': Icons.priority_high,
+          'title': 'Prioridade Alta',
+          'description': 'Este lead requer atenção imediata. Faça contato hoje.',
+          'color': Colors.red,
+        });
+      }
+    }
+
+    // Adiciona ação baseada na probabilidade
+    if (_probabilityOfClosing != null) {
+      if (_probabilityOfClosing! >= 0.5) {
+        actions.add({
+          'icon': Icons.trending_up,
+          'title': 'Alta Chance de Conversão',
+          'description': 'Lead quente! Agende uma reunião de fechamento.',
+          'color': Colors.green,
+        });
+      } else if (_probabilityOfClosing! >= 0.3) {
+        actions.add({
+          'icon': Icons.email,
+          'title': 'Nutrir Lead',
+          'description': 'Envie conteúdo relevante para aumentar o interesse.',
+          'color': Colors.blue,
+        });
+      } else {
+        actions.add({
+          'icon': Icons.refresh,
+          'title': 'Reengajar Lead',
+          'description': 'Lead frio. Tente uma abordagem diferente.',
+          'color': Colors.orange,
+        });
+      }
+    }
+
+    // Adiciona ações padrão se não houver nenhuma
+    if (actions.isEmpty) {
+      actions.add({
+        'icon': Icons.phone,
+        'title': 'Fazer Primeiro Contato',
+        'description': 'Entre em contato para entender as necessidades do cliente.',
+        'color': Colors.blue,
+      });
+      actions.add({
+        'icon': Icons.calendar_today,
+        'title': 'Agendar Reunião',
+        'description': 'Agende uma apresentação do produto/serviço.',
+        'color': Colors.purple,
+      });
+    }
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -1096,65 +1458,93 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Ações recomendadas',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 16),
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.task_alt,
+                  color: Colors.green.shade700,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Ações Recomendadas',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 16),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.recommendedActions
-                  .map(
-                    (action) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _buildActionItem(action),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
+          SizedBox(height: isMobile ? 16 : 20),
+          ...actions.map((action) => _buildActionCard(
+            icon: action['icon'],
+            title: action['title'],
+            description: action['description'],
+            color: action['color'],
+          )).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildActionItem(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 6),
-          width: 6,
-          height: 6,
-          decoration: const BoxDecoration(
-            color: Colors.black54,
-            shape: BoxShape.circle,
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 22),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 14),
-              color: Colors.grey.shade700,
-              height: 1.4,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, base: 14),
+                    fontWeight: FontWeight.bold,
+                    color: color.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, base: 13),
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1164,6 +1554,35 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     if (isMobile) {
       return Column(
         children: [
+          // Botão de Registrar Interação (destaque)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoadingInteraction
+                  ? null
+                  : () => _showInteractionDialog(context),
+              icon: _isLoadingInteraction
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.add_circle_outline),
+              label: const Text('Registrar Interação'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -1227,34 +1646,46 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _completeAction(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: Text(
-                'Concluir Ação',
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, base: 15),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
         ],
       );
     }
 
     return Row(
       children: [
+        // Botão de Registrar Interação
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isLoadingInteraction
+                ? null
+                : () => _showInteractionDialog(context),
+            icon: _isLoadingInteraction
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.add_circle_outline),
+            label: Text(
+              'Registrar Interação',
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, base: 14),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
         Expanded(
           child: OutlinedButton(
             onPressed: _isLoadingEmail
@@ -1314,30 +1745,398 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: ElevatedButton(
-            onPressed: () => _completeAction(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
-            child: Text(
-              'Concluir Ação',
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 16),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
       ],
     );
+  }
+
+  /// Exibe o diálogo para registrar uma interação
+  void _showInteractionDialog(BuildContext context) {
+    String selectedType = 'call';
+    final notesController = TextEditingController();
+    bool isSubmitting = false;
+
+    final interactionTypes = [
+      {'value': 'call', 'label': 'Ligação', 'icon': Icons.phone},
+      {'value': 'email', 'label': 'E-mail', 'icon': Icons.email},
+      {'value': 'meeting', 'label': 'Reunião', 'icon': Icons.event},
+      {'value': 'visit', 'label': 'Visita', 'icon': Icons.location_on},
+      {'value': 'proposal', 'label': 'Proposta', 'icon': Icons.description},
+      {'value': 'negotiation', 'label': 'Negociação', 'icon': Icons.handshake},
+      {'value': 'follow_up', 'label': 'Follow-up', 'icon': Icons.update},
+      {'value': 'demo', 'label': 'Demonstração', 'icon': Icons.play_circle},
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.add_task, color: Colors.green.shade700),
+              ),
+              const SizedBox(width: 12),
+              const Text('Registrar Interação'),
+            ],
+          ),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tipo de Interação',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: interactionTypes.map((type) {
+                    final isSelected = selectedType == type['value'];
+                    return InkWell(
+                      onTap: () {
+                        setDialogState(() {
+                          selectedType = type['value'] as String;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.green.shade100
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.green
+                                : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              type['icon'] as IconData,
+                              size: 18,
+                              color: isSelected
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              type['label'] as String,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.green.shade700
+                                    : Colors.grey.shade700,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Text(
+                      'Descrição da Interação',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const Text(' *', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Descreva o que foi conversado, resultado da interação...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.green, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Ao registrar uma interação, a IA irá recalcular o score e as sugestões para esta lead.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton.icon(
+              onPressed: isSubmitting ? null : () {
+                if (notesController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor, descreva a interação'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Previne cliques duplos - desabilita o botão imediatamente
+                if (isSubmitting) return;
+                setDialogState(() => isSubmitting = true);
+                
+                // Captura os valores antes de fechar
+                final typeToSend = selectedType;
+                final notesToSend = notesController.text;
+                
+                // Fecha o dialog primeiro
+                Navigator.pop(dialogContext);
+                
+                // Depois registra a interação (sem await aqui)
+                _registerInteraction(typeToSend, notesToSend);
+              },
+              icon: isSubmitting 
+                  ? const SizedBox(
+                      width: 16, 
+                      height: 16, 
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.check),
+              label: Text(isSubmitting ? 'Enviando...' : 'Registrar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Registra a interação na API
+  Future<void> _registerInteraction(String type, String notes) async {
+    // Previne chamadas duplicadas com dupla verificação
+    if (_isLoadingInteraction || _interactionInProgress) {
+      print('⚠️ _registerInteraction já está em execução, ignorando chamada duplicada');
+      print('   _isLoadingInteraction=$_isLoadingInteraction, _interactionInProgress=$_interactionInProgress');
+      return;
+    }
+    
+    // Marca como em progresso IMEDIATAMENTE (antes do setState)
+    _interactionInProgress = true;
+    
+    print('🚀 _registerInteraction chamado: type=$type');
+    setState(() => _isLoadingInteraction = true);
+
+    // Salva valores anteriores para o histórico
+    final scoreBefore = _currentScore;
+    final probabilityBefore = _probabilityOfClosing;
+
+    try {
+      final interaction = InteractionDto(
+        type: type,
+        notes: notes.isNotEmpty ? notes : null,
+        date: DateTime.now(),
+      );
+
+      print('📤 Enviando interação para API...');
+      final response = await _apiService.addInteraction(widget.leadId, interaction);
+      print('📥 Resposta recebida: isSuccess=${response.isSuccess}');
+
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        // Se a API retornou o lead atualizado, usa diretamente
+        if (response.data != null) {
+          final lead = response.data!;
+          print('✅ API retornou lead atualizado!');
+          print('   Score: ${lead.currentScore}');
+          print('   Probabilidade: ${lead.probabilityOfClosing}');
+          print('   Interações: ${lead.interactionsCount}');
+          
+          setState(() {
+            _currentScore = lead.currentScore;
+            _probabilityOfClosing = lead.probabilityOfClosing;
+            _priority = lead.priorityText;
+            _nextStepSuggestion = lead.nextStepSuggestion;
+            _suggestedContactType = lead.suggestedContactType;
+            _interactionsCount = lead.interactionsCount;
+            if (lead.nextStepSuggestion != null) {
+              _aiSummary = lead.nextStepSuggestion!;
+            }
+          });
+          
+          // Salva no histórico local
+          await _saveToHistory(
+            type: type,
+            content: notes,
+            scoreBefore: scoreBefore,
+            scoreAfter: lead.currentScore,
+            probabilityBefore: probabilityBefore,
+            probabilityAfter: lead.probabilityOfClosing,
+            aiSuggestion: lead.nextStepSuggestion,
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.psychology, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Interação registrada! Score: ${lead.currentScore} | Prob: ${((lead.probabilityOfClosing ?? 0) * 100).toInt()}%',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        } else {
+          // Salva no histórico mesmo sem resposta da IA
+          await _saveToHistory(
+            type: type,
+            content: notes,
+            scoreBefore: scoreBefore,
+            scoreAfter: _currentScore,
+            probabilityBefore: probabilityBefore,
+            probabilityAfter: _probabilityOfClosing,
+            aiSuggestion: null,
+          );
+          
+          // Se não retornou, busca os dados atualizados
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text('Interação registrada! Buscando dados atualizados...'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Aguarda um pouco e depois atualiza os dados
+          await Future.delayed(const Duration(seconds: 1));
+          
+          if (mounted) {
+            await _refreshLeadData();
+          }
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${response.error}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao registrar interação: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      // Reseta ambas as flags
+      _interactionInProgress = false;
+      if (mounted) {
+        setState(() => _isLoadingInteraction = false);
+      }
+    }
+  }
+
+  /// Salva a interação no histórico local
+  Future<void> _saveToHistory({
+    required String type,
+    required String content,
+    int? scoreBefore,
+    int? scoreAfter,
+    double? probabilityBefore,
+    double? probabilityAfter,
+    String? aiSuggestion,
+  }) async {
+    try {
+      final historyItem = InteractionHistory(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        leadId: widget.leadId,
+        leadName: widget.companyName,
+        interactionType: type,
+        content: content,
+        date: DateTime.now(),
+        scoreBefore: scoreBefore,
+        scoreAfter: scoreAfter,
+        probabilityBefore: probabilityBefore,
+        probabilityAfter: probabilityAfter,
+        aiSuggestion: aiSuggestion,
+      );
+      
+      await _historyService.saveInteraction(historyItem);
+      print('💾 Interação salva no histórico!');
+    } catch (e) {
+      print('❌ Erro ao salvar no histórico: $e');
+    }
   }
 
   /// Exibe o e-mail sugerido pela IA

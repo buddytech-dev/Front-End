@@ -3,6 +3,7 @@ import '../pages/login_page.dart';
 import '../pages/home_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/history_page.dart';
+import '../pages/ranking_page.dart';
 import '../pages/client_details_page.dart';
 import '../pages/seller_dashboard_page.dart';
 import '../pages/admin_dashboard_page.dart';
@@ -14,6 +15,7 @@ import '../models/client_model.dart';
 
 /// Argumentos para navegação à página de detalhes do cliente
 class ClientDetailsArgs {
+  final String leadId;
   final String companyName;
   final String companyEmail;
   final String contactName;
@@ -44,6 +46,7 @@ class ClientDetailsArgs {
   final String? industry;
 
   ClientDetailsArgs({
+    required this.leadId,
     required this.companyName,
     required this.companyEmail,
     required this.contactName,
@@ -73,6 +76,7 @@ class ClientDetailsArgs {
   /// Cria a partir de um ClientModel
   factory ClientDetailsArgs.fromClientModel(ClientModel client) {
     return ClientDetailsArgs(
+      leadId: client.id,
       companyName: client.companyName,
       companyEmail: client.companyEmail,
       contactName: client.contactName,
@@ -113,6 +117,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String profile = '/profile';
   static const String history = '/history';
+  static const String ranking = '/ranking';
   static const String clientDetails = '/client-details';
   static const String sellerDashboard = '/seller-dashboard';
 
@@ -145,7 +150,10 @@ class AppRouter {
 
       case AppRoutes.history:
         return _buildRoute(const HistoryPage(), settings);
-
+        
+      case AppRoutes.ranking:
+        return _buildRoute(const RankingPage(), settings);
+        
       case AppRoutes.sellerDashboard:
         return _buildRoute(const SellerDashboardPage(), settings);
 
@@ -153,6 +161,7 @@ class AppRouter {
         final args = settings.arguments as ClientDetailsArgs;
         return _buildRoute(
           ClientDetailsPage(
+            leadId: args.leadId,
             companyName: args.companyName,
             companyEmail: args.companyEmail,
             contactName: args.contactName,
