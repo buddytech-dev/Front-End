@@ -179,7 +179,14 @@ class _LoginPageState extends State<LoginPage> {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: AppColors.primary, // Fundo azul
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4A90E2), Color(0xFF005BEA)],
+        ),
+      ),
+
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
