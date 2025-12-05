@@ -13,6 +13,7 @@ import '../models/client_model.dart';
 
 /// Argumentos para navegação à página de detalhes do cliente
 class ClientDetailsArgs {
+  final String leadId;
   final String companyName;
   final String companyEmail;
   final String contactName;
@@ -43,6 +44,7 @@ class ClientDetailsArgs {
   final String? industry;
 
   ClientDetailsArgs({
+    required this.leadId,
     required this.companyName,
     required this.companyEmail,
     required this.contactName,
@@ -72,6 +74,7 @@ class ClientDetailsArgs {
   /// Cria a partir de um ClientModel
   factory ClientDetailsArgs.fromClientModel(ClientModel client) {
     return ClientDetailsArgs(
+      leadId: client.id,
       companyName: client.companyName,
       companyEmail: client.companyEmail,
       contactName: client.contactName,
@@ -148,6 +151,7 @@ class AppRouter {
         final args = settings.arguments as ClientDetailsArgs;
         return _buildRoute(
           ClientDetailsPage(
+            leadId: args.leadId,
             companyName: args.companyName,
             companyEmail: args.companyEmail,
             contactName: args.contactName,

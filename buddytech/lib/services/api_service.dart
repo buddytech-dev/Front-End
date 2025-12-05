@@ -32,6 +32,17 @@ class ApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         final leads = data.map((json) => LeadDto.fromJson(json)).toList();
+        
+        // Debug: Verifica dados da IA em cada lead
+        for (var lead in leads) {
+          print('🤖 Lead "${lead.displayName}" - Dados IA:');
+          print('   currentScore: ${lead.currentScore}');
+          print('   probabilityOfClosing: ${lead.probabilityOfClosing}');
+          print('   nextStepSuggestion: ${lead.nextStepSuggestion}');
+          print('   suggestedContactType: ${lead.suggestedContactType}');
+          print('   priority: ${lead.priority}');
+        }
+        
         return ApiResponse.success(leads);
       } else if (response.statusCode == 404) {
         return ApiResponse.success([]);
@@ -184,20 +195,57 @@ class ApiService {
     InteractionDto interaction,
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/Lead/$leadId/interaction'),
+      // Tenta primeiro o endpoint /Interaction
+      final interactionData = {
+        ...interaction.toJson(),
+        'leadId': leadId,
+      };
+      
+      print('🔄 Registrando interação para lead: $leadId');
+      print('📤 Dados: $interactionData');
+      
+      // Tenta o endpoint /Interaction primeiro
+      var response = await http.post(
+        Uri.parse('$_baseUrl/Interaction'),
         headers: _headers,
-        body: json.encode(interaction.toJson()),
+        body: json.encode(interactionData),
       );
 
+      print('📥 Response /Interaction: ${response.statusCode}');
+
+      // Se não existir, tenta /Lead/{id}/interaction
+      if (response.statusCode == 404) {
+        print('🔄 Tentando endpoint alternativo /Lead/$leadId/interaction');
+        response = await http.post(
+          Uri.parse('$_baseUrl/Lead/$leadId/interaction'),
+          headers: _headers,
+          body: json.encode(interaction.toJson()),
+        );
+        print('📥 Response /Lead/interaction: ${response.statusCode}');
+      }
+
+      // Se ainda não existir, tenta /Lead/{id}/interact
+      if (response.statusCode == 404) {
+        print('🔄 Tentando endpoint alternativo /Lead/$leadId/interact');
+        response = await http.post(
+          Uri.parse('$_baseUrl/Lead/$leadId/interact'),
+          headers: _headers,
+          body: json.encode(interaction.toJson()),
+        );
+        print('📥 Response /Lead/interact: ${response.statusCode}');
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ Interação registrada com sucesso!');
         return ApiResponse.success(true);
       } else {
+        print('❌ Erro: ${response.statusCode} - ${response.body}');
         return ApiResponse.error(
           'Erro ao adicionar interação: ${response.statusCode}',
         );
       }
     } catch (e) {
+      print('❌ Exceção: $e');
       return ApiResponse.error('Erro de conexão: $e');
     }
   }

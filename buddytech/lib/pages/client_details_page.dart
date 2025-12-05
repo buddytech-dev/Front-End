@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
 import '../services/client_service.dart';
+import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
 class ClientDetailsPage extends StatefulWidget {
+  final String leadId;
   final String companyName;
   final String companyEmail;
   final String contactName;
@@ -34,6 +36,7 @@ class ClientDetailsPage extends StatefulWidget {
 
   const ClientDetailsPage({
     super.key,
+    required this.leadId,
     required this.companyName,
     required this.companyEmail,
     required this.contactName,
@@ -66,8 +69,10 @@ class ClientDetailsPage extends StatefulWidget {
 
 class _ClientDetailsPageState extends State<ClientDetailsPage> {
   final ClientService _clientService = ClientService();
+  final ApiService _apiService = ApiService();
   bool _isLoadingEmail = false;
   bool _isLoadingScript = false;
+  bool _isLoadingInteraction = false;
 
   @override
   Widget build(BuildContext context) {
@@ -758,19 +763,20 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
-      case 'urgente':
       case 'urgent':
+      case 'urgente':
         return Colors.red;
-      case 'alta':
       case 'high':
+      case 'alta':
         return Colors.orange;
-      case 'média':
       case 'medium':
-        return Colors.amber;
-      case 'baixa':
+      case 'média':
+        return Colors.blue;
       case 'low':
-      default:
+      case 'baixa':
         return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -1045,32 +1051,209 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Resumo de análise IA',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 16),
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          // Header com ícone de IA
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.psychology,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Análise de Inteligência Artificial',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 16),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 16 : 20),
+
+          // Score e Probabilidade em destaque
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF6366F1).withOpacity(0.1),
+                  const Color(0xFF8B5CF6).withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                // Score
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${widget.currentScore ?? 0}',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 32),
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF6366F1),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Score da Lead',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 12),
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 50,
+                  color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                ),
+                // Probabilidade
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${((widget.probabilityOfClosing ?? 0) * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 32),
+                          fontWeight: FontWeight.bold,
+                          color: _getProbabilityColor(widget.probabilityOfClosing ?? 0),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Prob. Fechamento',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 12),
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 50,
+                  color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                ),
+                // Prioridade
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getPriorityColor(widget.priority ?? 'Normal'),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          widget.priority ?? 'Normal',
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 12),
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Prioridade',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 12),
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Text(
-              widget.aiSummary,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 14),
-                color: Colors.grey.shade700,
-                height: 1.5,
+
+          SizedBox(height: isMobile ? 16 : 20),
+
+          // Próximo Passo Sugerido pela IA
+          if (widget.nextStepSuggestion != null && widget.nextStepSuggestion!.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade300),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb,
+                        color: Colors.amber.shade700,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Sugestão da IA',
+                        style: TextStyle(
+                          fontSize: Responsive.fontSize(context, base: 14),
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    widget.nextStepSuggestion!,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, base: 14),
+                      color: Colors.amber.shade900,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+          ],
+
+          // Se não tiver sugestão, mostra o aiSummary
+          if ((widget.nextStepSuggestion == null || widget.nextStepSuggestion!.isEmpty) && 
+              widget.aiSummary.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Text(
+                widget.aiSummary,
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 14),
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1079,6 +1262,76 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   Widget _buildRecommendedActionsCard() {
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
+
+    // Lista de ações baseadas nos dados da IA
+    final List<Map<String, dynamic>> actions = [];
+
+    // Adiciona ação baseada na sugestão de tipo de contato
+    if (widget.suggestedContactType != null && 
+        widget.suggestedContactType!.isNotEmpty &&
+        widget.suggestedContactType != 'N/A') {
+      actions.add({
+        'icon': Icons.contact_phone,
+        'title': 'Tipo de Contato Sugerido',
+        'description': widget.suggestedContactType!,
+        'color': Colors.green,
+      });
+    }
+
+    // Adiciona ação baseada na prioridade
+    if (widget.priority != null) {
+      final priorityLower = widget.priority!.toLowerCase();
+      if (priorityLower == 'high' || priorityLower == 'urgent' || priorityLower == 'alta' || priorityLower == 'urgente') {
+        actions.add({
+          'icon': Icons.priority_high,
+          'title': 'Prioridade Alta',
+          'description': 'Este lead requer atenção imediata. Faça contato hoje.',
+          'color': Colors.red,
+        });
+      }
+    }
+
+    // Adiciona ação baseada na probabilidade
+    if (widget.probabilityOfClosing != null) {
+      if (widget.probabilityOfClosing! >= 0.5) {
+        actions.add({
+          'icon': Icons.trending_up,
+          'title': 'Alta Chance de Conversão',
+          'description': 'Lead quente! Agende uma reunião de fechamento.',
+          'color': Colors.green,
+        });
+      } else if (widget.probabilityOfClosing! >= 0.3) {
+        actions.add({
+          'icon': Icons.email,
+          'title': 'Nutrir Lead',
+          'description': 'Envie conteúdo relevante para aumentar o interesse.',
+          'color': Colors.blue,
+        });
+      } else {
+        actions.add({
+          'icon': Icons.refresh,
+          'title': 'Reengajar Lead',
+          'description': 'Lead frio. Tente uma abordagem diferente.',
+          'color': Colors.orange,
+        });
+      }
+    }
+
+    // Adiciona ações padrão se não houver nenhuma
+    if (actions.isEmpty) {
+      actions.add({
+        'icon': Icons.phone,
+        'title': 'Fazer Primeiro Contato',
+        'description': 'Entre em contato para entender as necessidades do cliente.',
+        'color': Colors.blue,
+      });
+      actions.add({
+        'icon': Icons.calendar_today,
+        'title': 'Agendar Reunião',
+        'description': 'Agende uma apresentação do produto/serviço.',
+        'color': Colors.purple,
+      });
+    }
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -1096,65 +1349,93 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Ações recomendadas',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 16),
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.task_alt,
+                  color: Colors.green.shade700,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Ações Recomendadas',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 16),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: isMobile ? 12 : 16),
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(isMobile ? 12 : 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: widget.recommendedActions
-                  .map(
-                    (action) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _buildActionItem(action),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
+          SizedBox(height: isMobile ? 16 : 20),
+          ...actions.map((action) => _buildActionCard(
+            icon: action['icon'],
+            title: action['title'],
+            description: action['description'],
+            color: action['color'],
+          )).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildActionItem(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          margin: const EdgeInsets.only(top: 6),
-          width: 6,
-          height: 6,
-          decoration: const BoxDecoration(
-            color: Colors.black54,
-            shape: BoxShape.circle,
+  Widget _buildActionCard({
+    required IconData icon,
+    required String title,
+    required String description,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 22),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 14),
-              color: Colors.grey.shade700,
-              height: 1.4,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, base: 14),
+                    fontWeight: FontWeight.bold,
+                    color: color.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: Responsive.fontSize(context, base: 13),
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1164,6 +1445,35 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     if (isMobile) {
       return Column(
         children: [
+          // Botão de Registrar Interação (destaque)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoadingInteraction
+                  ? null
+                  : () => _showInteractionDialog(context),
+              icon: _isLoadingInteraction
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.add_circle_outline),
+              label: const Text('Registrar Interação'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -1227,34 +1537,46 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _completeAction(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: Text(
-                'Concluir Ação',
-                style: TextStyle(
-                  fontSize: Responsive.fontSize(context, base: 15),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
         ],
       );
     }
 
     return Row(
       children: [
+        // Botão de Registrar Interação
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isLoadingInteraction
+                ? null
+                : () => _showInteractionDialog(context),
+            icon: _isLoadingInteraction
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.add_circle_outline),
+            label: Text(
+              'Registrar Interação',
+              style: TextStyle(
+                fontSize: Responsive.fontSize(context, base: 14),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
         Expanded(
           child: OutlinedButton(
             onPressed: _isLoadingEmail
@@ -1314,30 +1636,248 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: ElevatedButton(
-            onPressed: () => _completeAction(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
-            ),
-            child: Text(
-              'Concluir Ação',
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 16),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
       ],
     );
+  }
+
+  /// Exibe o diálogo para registrar uma interação
+  void _showInteractionDialog(BuildContext context) {
+    String selectedType = 'call';
+    final notesController = TextEditingController();
+
+    final interactionTypes = [
+      {'value': 'call', 'label': 'Ligação', 'icon': Icons.phone},
+      {'value': 'email', 'label': 'E-mail', 'icon': Icons.email},
+      {'value': 'meeting', 'label': 'Reunião', 'icon': Icons.event},
+      {'value': 'visit', 'label': 'Visita', 'icon': Icons.location_on},
+      {'value': 'proposal', 'label': 'Proposta', 'icon': Icons.description},
+      {'value': 'negotiation', 'label': 'Negociação', 'icon': Icons.handshake},
+      {'value': 'follow_up', 'label': 'Follow-up', 'icon': Icons.update},
+      {'value': 'demo', 'label': 'Demonstração', 'icon': Icons.play_circle},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.add_task, color: Colors.green.shade700),
+              ),
+              const SizedBox(width: 12),
+              const Text('Registrar Interação'),
+            ],
+          ),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tipo de Interação',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: interactionTypes.map((type) {
+                    final isSelected = selectedType == type['value'];
+                    return InkWell(
+                      onTap: () {
+                        setDialogState(() {
+                          selectedType = type['value'] as String;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? Colors.green.shade100
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected
+                                ? Colors.green
+                                : Colors.grey.shade300,
+                            width: isSelected ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              type['icon'] as IconData,
+                              size: 18,
+                              color: isSelected
+                                  ? Colors.green.shade700
+                                  : Colors.grey.shade600,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              type['label'] as String,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.green.shade700
+                                    : Colors.grey.shade700,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Observações (opcional)',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: notesController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Descreva o resultado da interação...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Colors.green, width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Ao registrar uma interação, a IA irá recalcular o score e as sugestões para esta lead.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _registerInteraction(selectedType, notesController.text);
+              },
+              icon: const Icon(Icons.check),
+              label: const Text('Registrar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Registra a interação na API
+  Future<void> _registerInteraction(String type, String notes) async {
+    setState(() => _isLoadingInteraction = true);
+
+    try {
+      final interaction = InteractionDto(
+        type: type,
+        notes: notes.isNotEmpty ? notes : null,
+        date: DateTime.now(),
+      );
+
+      final response = await _apiService.addInteraction(widget.leadId, interaction);
+
+      if (!mounted) return;
+
+      if (response.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'Interação registrada com sucesso! A IA está recalculando o score...',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+
+        // Volta para a home e recarrega os dados
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${response.error}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao registrar interação: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingInteraction = false);
+      }
+    }
   }
 
   /// Exibe o e-mail sugerido pela IA
