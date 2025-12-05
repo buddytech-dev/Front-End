@@ -3,7 +3,7 @@
 # -------------------------------------------
 
 name: buddytech
-description: "Aplicação BuddyTech – MVP com Login via Supabase."
+description: "Aplicação BuddyTech para MVP"
 publish_to: 'none'
 
 # -------------------------------------------
@@ -57,6 +57,7 @@ flutter:
   assets:
     - assets/
     - assets/logo.png
+    - assets/logo2.png
     - assets/.env
 
   # -----------------------------------------
