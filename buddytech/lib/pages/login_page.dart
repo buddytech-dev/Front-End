@@ -46,10 +46,7 @@ class _LoginPageState extends State<LoginPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Erro: $e"),
-            backgroundColor: AppColors.error,
-          ),
+          SnackBar(content: Text("Erro: $e"), backgroundColor: AppColors.error),
         );
       }
     } finally {
@@ -118,65 +115,218 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _buildEmailField() {
+    return TextField(
+      controller: emailController,
+      keyboardType: TextInputType.emailAddress,
+      decoration: InputDecoration(
+        hintText: "Insira seu e-mail",
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextField(
+      controller: passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        hintText: "Insira sua senha",
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword
+                ? Icons.visibility_off_outlined
+                : Icons.visibility_outlined,
+            color: Colors.grey,
+          ),
+          onPressed: () => setState(() {
+            _obscurePassword = !_obscurePassword;
+          }),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
+      ),
+    );
+  }
+
   /// Layout para mobile - apenas formulário com header
   Widget _buildMobileLayout() {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Header com logo
-          Container(
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF4A90E2), Color(0xFF005BEA)],
+        ),
+      ),
+
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
-            decoration: const BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
-              ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 12,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  // Logo
-                  Container(
-                    height: 80,
-                    width: 80,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Image.asset("assets/logo.png"),
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Logo
+                Container(
+                  height: 90,
+                  width: 90,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    "BuddyTech",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  child: Image.asset("assets/logo.png"),
+                ),
+                const SizedBox(height: 12),
+
+                // Nome
+                const Text(
+                  "BuddyTech",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    "AI Sales Buddy",
+                ),
+
+                const SizedBox(height: 32),
+
+                // Formulário
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "E-mail",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 6),
+                _buildEmailField(),
+                const SizedBox(height: 20),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Senha",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _buildPasswordField(),
+
+                const SizedBox(height: 28),
+
+                // Botão entrar
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: loading ? null : login,
+                    child: loading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            "Entrar",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // Botão Esqueci minha senha
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.3,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.recoverPassword);
+                    },
+                    child: const Text(
+                      "Esqueci minha senha",
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-
-          // Formulário
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: _buildForm(),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -281,10 +431,7 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 8),
         Text(
           "Entre com suas credenciais para acessar o painel",
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 40),
 
@@ -303,10 +450,16 @@ class _LoginPageState extends State<LoginPage> {
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
             hintText: "seu@email.com",
-            prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textLight),
+            prefixIcon: const Icon(
+              Icons.email_outlined,
+              color: AppColors.textLight,
+            ),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.border),
@@ -339,10 +492,15 @@ class _LoginPageState extends State<LoginPage> {
           obscureText: _obscurePassword,
           decoration: InputDecoration(
             hintText: "••••••••",
-            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textLight),
+            prefixIcon: const Icon(
+              Icons.lock_outline,
+              color: AppColors.textLight,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
                 color: AppColors.textLight,
               ),
               onPressed: () {
@@ -351,7 +509,10 @@ class _LoginPageState extends State<LoginPage> {
             ),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 18,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppColors.border),
@@ -374,11 +535,9 @@ class _LoginPageState extends State<LoginPage> {
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () {
-              // TODO: Implementar recuperação de senha
+              Navigator.pushNamed(context, AppRoutes.recoverPassword);
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.primary),
             child: const Text("Esqueceu a senha?"),
           ),
         ),
@@ -410,10 +569,7 @@ class _LoginPageState extends State<LoginPage> {
                   )
                 : const Text(
                     "Entrar",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
           ),
         ),
