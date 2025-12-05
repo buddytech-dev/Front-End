@@ -89,18 +89,28 @@ class ApiService {
   /// Busca um lead por ID
   Future<ApiResponse<LeadDto>> getLeadById(String id) async {
     try {
+      print('🔍 Buscando lead ID: $id');
       final response = await http.get(
         Uri.parse('$_baseUrl/Lead/$id'),
         headers: _headers,
       );
 
+      print('📡 Status: ${response.statusCode}');
+      print('📦 Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print('📊 Dados parseados:');
+        print('   - currentScore: ${data['currentScore'] ?? data['CurrentScore']}');
+        print('   - probabilityOfClosing: ${data['probabilityOfClosing'] ?? data['ProbabilityOfClosing']}');
+        print('   - interactionsCount: ${data['interactionsCount'] ?? data['InteractionsCount']}');
+        print('   - priority: ${data['priority'] ?? data['Priority']}');
         return ApiResponse.success(LeadDto.fromJson(data));
       } else {
         return ApiResponse.error('Lead não encontrado');
       }
     } catch (e) {
+      print('❌ Erro ao buscar lead: $e');
       return ApiResponse.error('Erro de conexão: $e');
     }
   }
@@ -189,55 +199,55 @@ class ApiService {
     }
   }
 
-  /// Adiciona uma interação ao lead
-  Future<ApiResponse<bool>> addInteraction(
+  /// Adiciona uma interação ao lead - retorna o Lead atualizado com dados da IA
+  Future<ApiResponse<LeadDto?>> addInteraction(
     String leadId,
     InteractionDto interaction,
   ) async {
     try {
-      // Tenta primeiro o endpoint /Interaction
+      // Formato para o endpoint /Lead/{id}/interact
+      // Campo obrigatório: InteractionContent
       final interactionData = {
-        ...interaction.toJson(),
-        'leadId': leadId,
+        'InteractionType': interaction.type,
+        'InteractionContent': interaction.notes ?? 'Interação registrada via app',
+        'InteractionDate': (interaction.date ?? DateTime.now()).toIso8601String(),
       };
       
       print('🔄 Registrando interação para lead: $leadId');
+      print('📤 URL: $_baseUrl/Lead/$leadId/interact');
       print('📤 Dados: $interactionData');
       
-      // Tenta o endpoint /Interaction primeiro
-      var response = await http.post(
-        Uri.parse('$_baseUrl/Interaction'),
+      final response = await http.post(
+        Uri.parse('$_baseUrl/Lead/$leadId/interact'),
         headers: _headers,
         body: json.encode(interactionData),
       );
 
-      print('📥 Response /Interaction: ${response.statusCode}');
-
-      // Se não existir, tenta /Lead/{id}/interaction
-      if (response.statusCode == 404) {
-        print('🔄 Tentando endpoint alternativo /Lead/$leadId/interaction');
-        response = await http.post(
-          Uri.parse('$_baseUrl/Lead/$leadId/interaction'),
-          headers: _headers,
-          body: json.encode(interaction.toJson()),
-        );
-        print('📥 Response /Lead/interaction: ${response.statusCode}');
-      }
-
-      // Se ainda não existir, tenta /Lead/{id}/interact
-      if (response.statusCode == 404) {
-        print('🔄 Tentando endpoint alternativo /Lead/$leadId/interact');
-        response = await http.post(
-          Uri.parse('$_baseUrl/Lead/$leadId/interact'),
-          headers: _headers,
-          body: json.encode(interaction.toJson()),
-        );
-        print('📥 Response /Lead/interact: ${response.statusCode}');
-      }
+      print('📥 Response: ${response.statusCode}');
+      print('📥 Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ Interação registrada com sucesso!');
-        return ApiResponse.success(true);
+        
+        // Tenta parsear a resposta como Lead (pode vir com dados atualizados da IA)
+        if (response.body.isNotEmpty) {
+          try {
+            final data = json.decode(response.body);
+            print('📊 Dados retornados pela API:');
+            print('   - currentScore: ${data['currentScore'] ?? data['CurrentScore']}');
+            print('   - probabilityOfClosing: ${data['probabilityOfClosing'] ?? data['ProbabilityOfClosing']}');
+            print('   - interactionsCount: ${data['interactionsCount'] ?? data['InteractionsCount']}');
+            
+            // Se veio um objeto com dados de lead, retorna o lead atualizado
+            if (data is Map<String, dynamic> && (data.containsKey('leadId') || data.containsKey('LeadId') || data.containsKey('id'))) {
+              return ApiResponse.success(LeadDto.fromJson(data));
+            }
+          } catch (e) {
+            print('⚠️ Não foi possível parsear resposta como Lead: $e');
+          }
+        }
+        
+        return ApiResponse.success(null);
       } else {
         print('❌ Erro: ${response.statusCode} - ${response.body}');
         return ApiResponse.error(

@@ -237,6 +237,8 @@ class _HomePageState extends State<HomePage> {
   void _onNavTap(int index) {
     if (index == 1) {
       Navigator.pushNamed(context, AppRoutes.history);
+    } else if (index == 2) {
+      Navigator.pushNamed(context, AppRoutes.ranking);
     } else if (index == 3) {
       Navigator.pushNamed(context, AppRoutes.profile);
     } else if (index == 4) {
@@ -625,14 +627,40 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    client.companyEmail,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Text(
+                        client.companyEmail,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
+                  if (client.priority != null) ...[
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor(client.priority!).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getPriorityColor(client.priority!),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        'Prioridade: ${client.priority}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _getPriorityColor(client.priority!),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -782,6 +810,28 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.grey.shade500,
                 ),
               ),
+              if (client.priority != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getPriorityColor(client.priority!).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _getPriorityColor(client.priority!),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'Prioridade: ${client.priority}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _getPriorityColor(client.priority!),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 client.contactName,
@@ -869,5 +919,24 @@ class _HomePageState extends State<HomePage> {
       AppRoutes.clientDetails,
       arguments: ClientDetailsArgs.fromClientModel(client),
     );
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+      case 'urgente':
+        return Colors.red;
+      case 'high':
+      case 'alta':
+        return Colors.orange;
+      case 'medium':
+      case 'média':
+        return Colors.blue;
+      case 'low':
+      case 'baixa':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 }

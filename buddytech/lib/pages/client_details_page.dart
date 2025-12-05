@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_colors.dart';
+import '../models/interaction_history.dart';
 import '../services/client_service.dart';
 import '../services/api_service.dart';
+import '../services/interaction_history_service.dart';
 import '../utils/responsive.dart';
 
 class ClientDetailsPage extends StatefulWidget {
@@ -70,13 +72,84 @@ class ClientDetailsPage extends StatefulWidget {
 class _ClientDetailsPageState extends State<ClientDetailsPage> {
   final ClientService _clientService = ClientService();
   final ApiService _apiService = ApiService();
+  final InteractionHistoryService _historyService = InteractionHistoryService();
   bool _isLoadingEmail = false;
   bool _isLoadingScript = false;
   bool _isLoadingInteraction = false;
+  bool _isRefreshing = false;
+  bool _interactionInProgress = false; // Flag extra para prevenir chamadas duplicadas
+
+  // Estados mutáveis para dados da IA (podem ser atualizados após interação)
+  late int? _currentScore;
+  late double? _probabilityOfClosing;
+  late String? _priority;
+  late String? _nextStepSuggestion;
+  late String? _suggestedContactType;
+  late int? _interactionsCount;
+  late String _aiSummary;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializa com os valores passados pelo widget
+    _currentScore = widget.currentScore;
+    _probabilityOfClosing = widget.probabilityOfClosing;
+    _priority = widget.priority;
+    _nextStepSuggestion = widget.nextStepSuggestion;
+    _suggestedContactType = widget.suggestedContactType;
+    _interactionsCount = widget.interactionsCount;
+    _aiSummary = widget.aiSummary;
+  }
+
+  /// Atualiza os dados da lead buscando da API
+  Future<void> _refreshLeadData() async {
+    print('🔄 Iniciando _refreshLeadData...');
+    setState(() => _isRefreshing = true);
+
+    try {
+      final response = await _apiService.getLeadById(widget.leadId);
+      
+      print('📡 Response isSuccess: ${response.isSuccess}');
+      print('📡 Response data: ${response.data}');
+      
+      if (response.isSuccess && response.data != null) {
+        final lead = response.data!;
+        print('📊 Antes do setState:');
+        print('   _currentScore: $_currentScore');
+        print('   _interactionsCount: $_interactionsCount');
+        
+        setState(() {
+          _currentScore = lead.currentScore;
+          _probabilityOfClosing = lead.probabilityOfClosing;
+          _priority = lead.priorityText;
+          _nextStepSuggestion = lead.nextStepSuggestion;
+          _suggestedContactType = lead.suggestedContactType;
+          _interactionsCount = lead.interactionsCount;
+          _aiSummary = lead.nextStepSuggestion ?? lead.description ?? widget.aiSummary;
+        });
+        
+        print('📊 Depois do setState:');
+        print('   _currentScore: $_currentScore');
+        print('   _interactionsCount: $_interactionsCount');
+        print('✅ setState executado com sucesso!');
+      } else {
+        print('❌ Response falhou ou data é null');
+      }
+    } catch (e) {
+      print('❌ Erro ao atualizar dados: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ BUILD: score=$_currentScore, interações=$_interactionsCount');
+    
     return Scaffold(
+      key: ValueKey('details_${_currentScore}_${_interactionsCount}_${_probabilityOfClosing}'),
       backgroundColor: Colors.white,
       body: Column(
         children: [
@@ -377,19 +450,22 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   /// Card com métricas da lead (Score, Probabilidade, Prioridade, Fonte)
   Widget _buildLeadMetricsCard() {
+    print('🎨 Rebuild _buildLeadMetricsCard: score=$_currentScore, interações=$_interactionsCount');
+    
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
 
-    // Verifica se há métricas para exibir
+    // Verifica se há métricas para exibir (usa variáveis de estado)
     final hasMetrics =
-        widget.currentScore != null ||
-        widget.probabilityOfClosing != null ||
-        widget.priority != null ||
+        _currentScore != null ||
+        _probabilityOfClosing != null ||
+        _priority != null ||
         widget.leadSource != null;
 
     if (!hasMetrics) return const SizedBox.shrink();
 
     return Container(
+      key: ValueKey('metrics_${_currentScore}_${_interactionsCount}'),
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -405,13 +481,28 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Métricas da Lead',
-            style: TextStyle(
-              fontSize: Responsive.fontSize(context, base: 18),
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
+          Row(
+            children: [
+              Text(
+                'Métricas da Lead',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 18),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              if (_isRefreshing) ...[
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.blue,
+                  ),
+                ),
+              ],
+            ],
           ),
           SizedBox(height: isMobile ? 16 : 20),
 
@@ -419,31 +510,31 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
             spacing: 16,
             runSpacing: 16,
             children: [
-              // Score
-              if (widget.currentScore != null)
+              // Score (usa variável de estado)
+              if (_currentScore != null)
                 _buildMetricItem(
                   icon: Icons.score,
                   label: 'Score',
-                  value: widget.currentScore.toString(),
+                  value: _currentScore.toString(),
                   color: Colors.blue,
                 ),
 
-              // Probabilidade
-              if (widget.probabilityOfClosing != null)
+              // Probabilidade (usa variável de estado)
+              if (_probabilityOfClosing != null)
                 _buildMetricItem(
                   icon: Icons.trending_up,
                   label: 'Probabilidade',
-                  value: '${(widget.probabilityOfClosing! * 100).toInt()}%',
-                  color: _getProbabilityColor(widget.probabilityOfClosing!),
+                  value: '${(_probabilityOfClosing! * 100).toInt()}%',
+                  color: _getProbabilityColor(_probabilityOfClosing!),
                 ),
 
-              // Prioridade
-              if (widget.priority != null)
+              // Prioridade (usa variável de estado)
+              if (_priority != null)
                 _buildMetricItem(
                   icon: Icons.flag,
                   label: 'Prioridade',
-                  value: widget.priority!,
-                  color: _getPriorityColor(widget.priority!),
+                  value: _priority!,
+                  color: _getPriorityColor(_priority!),
                 ),
 
               // Fonte
@@ -455,12 +546,12 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   color: Colors.purple,
                 ),
 
-              // Interações
-              if (widget.interactionsCount != null)
+              // Interações (usa variável de estado)
+              if (_interactionsCount != null)
                 _buildMetricItem(
                   icon: Icons.chat,
                   label: 'Interações',
-                  value: widget.interactionsCount.toString(),
+                  value: _interactionsCount.toString(),
                   color: Colors.teal,
                 ),
             ],
@@ -1094,93 +1185,111 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.2)),
             ),
-            child: Row(
+            child: Stack(
               children: [
-                // Score
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${widget.currentScore ?? 0}',
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, base: 32),
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF6366F1),
-                        ),
+                // Indicador de atualização
+                if (_isRefreshing)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: const Color(0xFF6366F1),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Score da Lead',
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, base: 12),
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                Container(
-                  width: 1,
-                  height: 50,
-                  color: const Color(0xFF8B5CF6).withOpacity(0.3),
-                ),
-                // Probabilidade
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text(
-                        '${((widget.probabilityOfClosing ?? 0) * 100).toInt()}%',
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, base: 32),
-                          fontWeight: FontWeight.bold,
-                          color: _getProbabilityColor(widget.probabilityOfClosing ?? 0),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Prob. Fechamento',
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, base: 12),
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 50,
-                  color: const Color(0xFF8B5CF6).withOpacity(0.3),
-                ),
-                // Prioridade
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getPriorityColor(widget.priority ?? 'Normal'),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          widget.priority ?? 'Normal',
-                          style: TextStyle(
-                            fontSize: Responsive.fontSize(context, base: 12),
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                Row(
+                  children: [
+                    // Score
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            '${_currentScore ?? 0}',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 32),
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF6366F1),
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Score da Lead',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 12),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Prioridade',
-                        style: TextStyle(
-                          fontSize: Responsive.fontSize(context, base: 12),
-                          color: Colors.grey.shade600,
-                        ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                    ),
+                    // Probabilidade
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            '${((_probabilityOfClosing ?? 0) * 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 32),
+                              fontWeight: FontWeight.bold,
+                              color: _getProbabilityColor(_probabilityOfClosing ?? 0),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Prob. Fechamento',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 12),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 50,
+                      color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                    ),
+                    // Prioridade
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _getPriorityColor(_priority ?? 'Normal'),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              _priority ?? 'Normal',
+                              style: TextStyle(
+                                fontSize: Responsive.fontSize(context, base: 12),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Prioridade',
+                            style: TextStyle(
+                              fontSize: Responsive.fontSize(context, base: 12),
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1189,7 +1298,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           SizedBox(height: isMobile ? 16 : 20),
 
           // Próximo Passo Sugerido pela IA
-          if (widget.nextStepSuggestion != null && widget.nextStepSuggestion!.isNotEmpty) ...[
+          if (_nextStepSuggestion != null && _nextStepSuggestion!.isNotEmpty) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -1221,7 +1330,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    widget.nextStepSuggestion!,
+                    _nextStepSuggestion!,
                     style: TextStyle(
                       fontSize: Responsive.fontSize(context, base: 14),
                       color: Colors.amber.shade900,
@@ -1234,8 +1343,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ],
 
           // Se não tiver sugestão, mostra o aiSummary
-          if ((widget.nextStepSuggestion == null || widget.nextStepSuggestion!.isEmpty) && 
-              widget.aiSummary.isNotEmpty) ...[
+          if ((_nextStepSuggestion == null || _nextStepSuggestion!.isEmpty) && 
+              _aiSummary.isNotEmpty) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -1245,7 +1354,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                 border: Border.all(color: Colors.grey.shade200),
               ),
               child: Text(
-                widget.aiSummary,
+                _aiSummary,
                 style: TextStyle(
                   fontSize: Responsive.fontSize(context, base: 14),
                   color: Colors.grey.shade700,
@@ -1267,20 +1376,20 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     final List<Map<String, dynamic>> actions = [];
 
     // Adiciona ação baseada na sugestão de tipo de contato
-    if (widget.suggestedContactType != null && 
-        widget.suggestedContactType!.isNotEmpty &&
-        widget.suggestedContactType != 'N/A') {
+    if (_suggestedContactType != null && 
+        _suggestedContactType!.isNotEmpty &&
+        _suggestedContactType != 'N/A') {
       actions.add({
         'icon': Icons.contact_phone,
         'title': 'Tipo de Contato Sugerido',
-        'description': widget.suggestedContactType!,
+        'description': _suggestedContactType!,
         'color': Colors.green,
       });
     }
 
     // Adiciona ação baseada na prioridade
-    if (widget.priority != null) {
-      final priorityLower = widget.priority!.toLowerCase();
+    if (_priority != null) {
+      final priorityLower = _priority!.toLowerCase();
       if (priorityLower == 'high' || priorityLower == 'urgent' || priorityLower == 'alta' || priorityLower == 'urgente') {
         actions.add({
           'icon': Icons.priority_high,
@@ -1292,15 +1401,15 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     }
 
     // Adiciona ação baseada na probabilidade
-    if (widget.probabilityOfClosing != null) {
-      if (widget.probabilityOfClosing! >= 0.5) {
+    if (_probabilityOfClosing != null) {
+      if (_probabilityOfClosing! >= 0.5) {
         actions.add({
           'icon': Icons.trending_up,
           'title': 'Alta Chance de Conversão',
           'description': 'Lead quente! Agende uma reunião de fechamento.',
           'color': Colors.green,
         });
-      } else if (widget.probabilityOfClosing! >= 0.3) {
+      } else if (_probabilityOfClosing! >= 0.3) {
         actions.add({
           'icon': Icons.email,
           'title': 'Nutrir Lead',
@@ -1644,6 +1753,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   void _showInteractionDialog(BuildContext context) {
     String selectedType = 'call';
     final notesController = TextEditingController();
+    bool isSubmitting = false;
 
     final interactionTypes = [
       {'value': 'call', 'label': 'Ligação', 'icon': Icons.phone},
@@ -1658,8 +1768,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
           title: Row(
             children: [
               Container(
@@ -1746,19 +1857,24 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   }).toList(),
                 ),
                 const SizedBox(height: 20),
-                Text(
-                  'Observações (opcional)',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'Descrição da Interação',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const Text(' *', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: notesController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Descreva o resultado da interação...',
+                    hintText: 'Descreva o que foi conversado, resultado da interação...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1797,16 +1913,43 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
               child: const Text('Cancelar'),
             ),
             ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _registerInteraction(selectedType, notesController.text);
+              onPressed: isSubmitting ? null : () {
+                if (notesController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Por favor, descreva a interação'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Previne cliques duplos - desabilita o botão imediatamente
+                if (isSubmitting) return;
+                setDialogState(() => isSubmitting = true);
+                
+                // Captura os valores antes de fechar
+                final typeToSend = selectedType;
+                final notesToSend = notesController.text;
+                
+                // Fecha o dialog primeiro
+                Navigator.pop(dialogContext);
+                
+                // Depois registra a interação (sem await aqui)
+                _registerInteraction(typeToSend, notesToSend);
               },
-              icon: const Icon(Icons.check),
-              label: const Text('Registrar'),
+              icon: isSubmitting 
+                  ? const SizedBox(
+                      width: 16, 
+                      height: 16, 
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.check),
+              label: Text(isSubmitting ? 'Enviando...' : 'Registrar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -1820,7 +1963,22 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   /// Registra a interação na API
   Future<void> _registerInteraction(String type, String notes) async {
+    // Previne chamadas duplicadas com dupla verificação
+    if (_isLoadingInteraction || _interactionInProgress) {
+      print('⚠️ _registerInteraction já está em execução, ignorando chamada duplicada');
+      print('   _isLoadingInteraction=$_isLoadingInteraction, _interactionInProgress=$_interactionInProgress');
+      return;
+    }
+    
+    // Marca como em progresso IMEDIATAMENTE (antes do setState)
+    _interactionInProgress = true;
+    
+    print('🚀 _registerInteraction chamado: type=$type');
     setState(() => _isLoadingInteraction = true);
+
+    // Salva valores anteriores para o histórico
+    final scoreBefore = _currentScore;
+    final probabilityBefore = _probabilityOfClosing;
 
     try {
       final interaction = InteractionDto(
@@ -1829,32 +1987,99 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
         date: DateTime.now(),
       );
 
+      print('📤 Enviando interação para API...');
       final response = await _apiService.addInteraction(widget.leadId, interaction);
+      print('📥 Resposta recebida: isSuccess=${response.isSuccess}');
 
       if (!mounted) return;
 
       if (response.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Interação registrada com sucesso! A IA está recalculando o score...',
+        // Se a API retornou o lead atualizado, usa diretamente
+        if (response.data != null) {
+          final lead = response.data!;
+          print('✅ API retornou lead atualizado!');
+          print('   Score: ${lead.currentScore}');
+          print('   Probabilidade: ${lead.probabilityOfClosing}');
+          print('   Interações: ${lead.interactionsCount}');
+          
+          setState(() {
+            _currentScore = lead.currentScore;
+            _probabilityOfClosing = lead.probabilityOfClosing;
+            _priority = lead.priorityText;
+            _nextStepSuggestion = lead.nextStepSuggestion;
+            _suggestedContactType = lead.suggestedContactType;
+            _interactionsCount = lead.interactionsCount;
+            if (lead.nextStepSuggestion != null) {
+              _aiSummary = lead.nextStepSuggestion!;
+            }
+          });
+          
+          // Salva no histórico local
+          await _saveToHistory(
+            type: type,
+            content: notes,
+            scoreBefore: scoreBefore,
+            scoreAfter: lead.currentScore,
+            probabilityBefore: probabilityBefore,
+            probabilityAfter: lead.probabilityOfClosing,
+            aiSuggestion: lead.nextStepSuggestion,
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.psychology, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Interação registrada! Score: ${lead.currentScore} | Prob: ${((lead.probabilityOfClosing ?? 0) * 100).toInt()}%',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
             ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+          );
+        } else {
+          // Salva no histórico mesmo sem resposta da IA
+          await _saveToHistory(
+            type: type,
+            content: notes,
+            scoreBefore: scoreBefore,
+            scoreAfter: _currentScore,
+            probabilityBefore: probabilityBefore,
+            probabilityAfter: _probabilityOfClosing,
+            aiSuggestion: null,
+          );
+          
+          // Se não retornou, busca os dados atualizados
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text('Interação registrada! Buscando dados atualizados...'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
 
-        // Volta para a home e recarrega os dados
-        Navigator.pop(context, true);
+          // Aguarda um pouco e depois atualiza os dados
+          await Future.delayed(const Duration(seconds: 1));
+          
+          if (mounted) {
+            await _refreshLeadData();
+          }
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1874,9 +2099,43 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
         ),
       );
     } finally {
+      // Reseta ambas as flags
+      _interactionInProgress = false;
       if (mounted) {
         setState(() => _isLoadingInteraction = false);
       }
+    }
+  }
+
+  /// Salva a interação no histórico local
+  Future<void> _saveToHistory({
+    required String type,
+    required String content,
+    int? scoreBefore,
+    int? scoreAfter,
+    double? probabilityBefore,
+    double? probabilityAfter,
+    String? aiSuggestion,
+  }) async {
+    try {
+      final historyItem = InteractionHistory(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        leadId: widget.leadId,
+        leadName: widget.companyName,
+        interactionType: type,
+        content: content,
+        date: DateTime.now(),
+        scoreBefore: scoreBefore,
+        scoreAfter: scoreAfter,
+        probabilityBefore: probabilityBefore,
+        probabilityAfter: probabilityAfter,
+        aiSuggestion: aiSuggestion,
+      );
+      
+      await _historyService.saveInteraction(historyItem);
+      print('💾 Interação salva no histórico!');
+    } catch (e) {
+      print('❌ Erro ao salvar no histórico: $e');
     }
   }
 

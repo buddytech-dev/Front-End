@@ -3,6 +3,7 @@ import '../pages/login_page.dart';
 import '../pages/home_page.dart';
 import '../pages/profile_page.dart';
 import '../pages/history_page.dart';
+import '../pages/ranking_page.dart';
 import '../pages/client_details_page.dart';
 import '../pages/seller_dashboard_page.dart';
 import '../pages/admin_dashboard_page.dart';
@@ -114,6 +115,7 @@ class AppRoutes {
   static const String home = '/home';
   static const String profile = '/profile';
   static const String history = '/history';
+  static const String ranking = '/ranking';
   static const String clientDetails = '/client-details';
   static const String sellerDashboard = '/seller-dashboard';
   
@@ -143,6 +145,9 @@ class AppRouter {
         
       case AppRoutes.history:
         return _buildRoute(const HistoryPage(), settings);
+        
+      case AppRoutes.ranking:
+        return _buildRoute(const RankingPage(), settings);
         
       case AppRoutes.sellerDashboard:
         return _buildRoute(const SellerDashboardPage(), settings);
