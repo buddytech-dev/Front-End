@@ -6,6 +6,9 @@ import '../models/client_model.dart';
 import '../services/api_service.dart';
 import '../services/admin_service.dart';
 import '../utils/responsive.dart';
+import 'history_page.dart';
+import 'ranking_page.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +27,7 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isAdmin = false;
   String _userName = 'Usuário';
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -47,6 +51,10 @@ class _HomePageState extends State<HomePage> {
         // Se não tiver nome, usa a parte do email antes do @
         setState(() => _userName = user.email!.split('@').first);
       }
+      // Carrega a foto do avatar
+      if (metadata != null && metadata['avatar_url'] != null) {
+        setState(() => _profileImageUrl = metadata['avatar_url']);
+      }
     }
   }
 
@@ -65,11 +73,13 @@ class _HomePageState extends State<HomePage> {
     try {
       // Busca todos os leads da API
       final response = await _apiService.getAllLeads();
-      
+
       if (response.isSuccess) {
         final leads = response.data ?? [];
         setState(() {
-          _clients = leads.map((lead) => ClientModel.fromLeadDto(lead)).toList();
+          _clients = leads
+              .map((lead) => ClientModel.fromLeadDto(lead))
+              .toList();
           _isLoading = false;
         });
       } else {
@@ -89,11 +99,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> logout(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.login,
-      (_) => false,
-    );
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
   }
 
   @override
@@ -111,12 +117,21 @@ class _HomePageState extends State<HomePage> {
 
           // CONTEÚDO PRINCIPAL
           Expanded(
-            child: SingleChildScrollView(
-              child: _buildMainContent(context),
-            ),
+            child: isMobile
+                ? IndexedStack(
+                    index: _selectedNavIndex,
+                    children: [
+                      SingleChildScrollView(child: _buildMainContent(context)),
+                      HistoryPage(embedded: true),
+                      RankingPage(embedded: true),
+                      ProfilePage(embedded: true),
+                    ],
+                  )
+                : SingleChildScrollView(child: _buildMainContent(context)),
           ),
         ],
       ),
+      bottomNavigationBar: isMobile ? _buildBottomNav(context) : null,
     );
   }
 
@@ -194,10 +209,7 @@ class _HomePageState extends State<HomePage> {
             // Logout
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red.shade400),
-              title: Text(
-                'Sair',
-                style: TextStyle(color: Colors.red.shade400),
-              ),
+              title: Text('Sair', style: TextStyle(color: Colors.red.shade400)),
               onTap: () {
                 Navigator.pop(context);
                 logout(context);
@@ -235,6 +247,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onNavTap(int index) {
+    final isMobile = Responsive.isMobile(context);
+
+    if (isMobile) {
+      setState(() {
+        _selectedNavIndex = index;
+      });
+      return;
+    }
+
     if (index == 1) {
       Navigator.pushNamed(context, AppRoutes.history);
     } else if (index == 2) {
@@ -250,6 +271,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Retorna o título da página baseado no índice selecionado
+  String _getPageTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Home';
+      case 1:
+        return 'Histórico';
+      case 2:
+        return 'Ranking';
+      case 3:
+        return 'Perfil';
+      default:
+        return 'Home';
+    }
+  }
+
   Widget _buildNavbar(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final horizontalPadding = Responsive.padding(context);
@@ -259,56 +296,101 @@ class _HomePageState extends State<HomePage> {
         horizontal: horizontalPadding,
         vertical: isMobile ? 12 : 16,
       ),
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
-            // Menu hamburger para mobile
-            if (isMobile)
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-
-            // Logo + Nome
-            Row(
-              children: [
-                Image.asset(
-                  'assets/Logo.png',
-                  height: isMobile ? 28 : 36,
-                  width: isMobile ? 28 : 36,
+            // Mobile layout: logo left, title center, avatar right
+            if (isMobile) ...[
+              // Logo
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Image.asset(
+                  'assets/nav.png',
+                  height: 32,
+                  width: 32,
                   errorBuilder: (_, __, ___) => Container(
-                    width: isMobile ? 28 : 36,
-                    height: isMobile ? 28 : 36,
+                    width: 32,
+                    height: 32,
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.business,
-                      color: Color(0xFF3B82F6),
+                    child: const Icon(Icons.business, color: Color(0xFF3B82F6)),
+                  ),
+                ),
+              ),
+
+              // Centered title with more padding
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4.0),
+                  child: Center(
+                    child: Text(
+                      _getPageTitle(_selectedNavIndex),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'BuddyTech',
-                  style: TextStyle(
-                    fontSize: isMobile ? 18 : 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+              ),
+
+              // Avatar right
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  backgroundImage: _profileImageUrl != null
+                      ? NetworkImage(_profileImageUrl!)
+                      : null,
+                  child: _profileImageUrl == null
+                      ? const Icon(Icons.person, color: Colors.white, size: 20)
+                      : null,
                 ),
-              ],
-            ),
+              ),
+            ],
 
-            const Spacer(),
+            // Desktop / Tablet layout: logo+name + nav items
+            if (!isMobile) ...[
+              // Logo + Nome
+              Row(
+                children: [
+                  Image.asset(
+                    'assets/Logo.png',
+                    height: isMobile ? 28 : 36,
+                    width: isMobile ? 28 : 36,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: isMobile ? 28 : 36,
+                      height: isMobile ? 28 : 36,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.business,
+                        color: Color(0xFF3B82F6),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'BuddyTech',
+                    style: TextStyle(
+                      fontSize: isMobile ? 18 : 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
 
-            // Menu de navegação (apenas desktop/tablet)
-            if (!isMobile)
+              const Spacer(),
+
               Row(
                 children: [
                   _navItem('Home', 0),
@@ -320,7 +402,6 @@ class _HomePageState extends State<HomePage> {
                   _navItem('Ranking', 2),
                   const SizedBox(width: 16),
                   _navItem('Perfil', 3),
-                  // Botão Admin (só aparece se for admin)
                   if (_isAdmin) ...[
                     const SizedBox(width: 16),
                     GestureDetector(
@@ -328,14 +409,21 @@ class _HomePageState extends State<HomePage> {
                         Navigator.pushNamed(context, AppRoutes.adminDashboard);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.admin_panel_settings, color: AppColors.primaryDark, size: 18),
+                            Icon(
+                              Icons.admin_panel_settings,
+                              color: AppColors.primaryDark,
+                              size: 18,
+                            ),
                             SizedBox(width: 6),
                             Text(
                               'Admin',
@@ -351,7 +439,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                   const SizedBox(width: 24),
-                  // Botão de logout
                   IconButton(
                     icon: const Icon(Icons.logout, color: Colors.white),
                     onPressed: () => logout(context),
@@ -359,6 +446,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
+            ],
           ],
         ),
       ),
@@ -374,7 +462,9 @@ class _HomePageState extends State<HomePage> {
         decoration: BoxDecoration(
           color: isActive ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
-          border: isActive ? null : Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+          border: isActive
+              ? null
+              : Border.all(color: Colors.white.withOpacity(0.3), width: 1),
         ),
         child: Text(
           text,
@@ -382,6 +472,55 @@ class _HomePageState extends State<HomePage> {
             fontSize: 15,
             color: isActive ? const Color(0xFF2563EB) : Colors.white,
             fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Helper para criar item da bottom nav com efeito hover
+  Widget _buildBottomNavItem({required IconData icon, required int index}) {
+    final isActive = _selectedNavIndex == index;
+    return GestureDetector(
+      onTap: () => _onNavTap(index),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF1e40af) : Colors.transparent,
+          shape: BoxShape.circle,
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF1e40af).withOpacity(0.4),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Icon(icon, size: 28, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    if (!isMobile) return const SizedBox.shrink();
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildBottomNavItem(icon: Icons.home, index: 0),
+              _buildBottomNavItem(icon: Icons.history, index: 1),
+              _buildBottomNavItem(icon: Icons.leaderboard, index: 2),
+              _buildBottomNavItem(icon: Icons.person, index: 3),
+            ],
           ),
         ),
       ),
@@ -454,9 +593,7 @@ class _HomePageState extends State<HomePage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(40),
-          child: CircularProgressIndicator(
-            color: AppColors.primary,
-          ),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
       );
     }
@@ -507,7 +644,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Título
               Text(
                 'Você não tem clientes no momento',
@@ -519,7 +656,7 @@ class _HomePageState extends State<HomePage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              
+
               // Descrição
               Text(
                 'Seus leads aparecerão aqui assim que forem atribuídos a você.',
@@ -530,7 +667,7 @@ class _HomePageState extends State<HomePage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              
+
               // Botão de atualizar
               OutlinedButton.icon(
                 onPressed: _loadClients,
@@ -539,7 +676,10 @@ class _HomePageState extends State<HomePage> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],
@@ -604,11 +744,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     )
-                  : Icon(
-                      client.logoIcon,
-                      color: Colors.white,
-                      size: 28,
-                    ),
+                  : Icon(client.logoIcon, color: Colors.white, size: 28),
             ),
 
             const SizedBox(width: 16),
@@ -626,41 +762,12 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        client.companyEmail,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  const SizedBox(height: 6),
+                  Text(
+                    client.companyEmail,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  if (client.priority != null) ...[
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: _getPriorityColor(client.priority!).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: _getPriorityColor(client.priority!),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        'Prioridade: ${client.priority}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _getPriorityColor(client.priority!),
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -687,6 +794,32 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
 
+        // Prioridade centralizada com padding
+        if (client.priority != null) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getPriorityColor(client.priority!).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _getPriorityColor(client.priority!),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                'Prioridade: ${client.priority}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _getPriorityColor(client.priority!),
+                ),
+              ),
+            ),
+          ),
+        ],
+
         const SizedBox(height: 16),
 
         // Contato
@@ -698,46 +831,26 @@ class _HomePageState extends State<HomePage> {
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           client.contactPhone,
-          style: TextStyle(
-            fontSize: 13,
-            color: Colors.grey.shade600,
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Status e última interação
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Status - ${client.status}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Última interação: ${client.lastInteraction}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
         ),
 
         const SizedBox(height: 12),
+
+        // Status e última interação
+        Text(
+          'Status - ${client.status}',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Última interação: ${client.lastInteraction}',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        ),
+
+        const SizedBox(height: 16),
 
         // Link Detalhes do cliente
         GestureDetector(
@@ -772,18 +885,11 @@ class _HomePageState extends State<HomePage> {
                   child: Image.network(
                     client.logoUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      client.logoIcon,
-                      color: Colors.white,
-                      size: 36,
-                    ),
+                    errorBuilder: (context, error, stackTrace) =>
+                        Icon(client.logoIcon, color: Colors.white, size: 36),
                   ),
                 )
-              : Icon(
-                  client.logoIcon,
-                  color: Colors.white,
-                  size: 36,
-                ),
+              : Icon(client.logoIcon, color: Colors.white, size: 36),
         ),
 
         const SizedBox(width: 24),
@@ -805,17 +911,19 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 4),
               Text(
                 client.companyEmail,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
               ),
               if (client.priority != null) ...[
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: _getPriorityColor(client.priority!).withOpacity(0.15),
+                    color: _getPriorityColor(
+                      client.priority!,
+                    ).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _getPriorityColor(client.priority!),
@@ -844,10 +952,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 2),
               Text(
                 client.contactPhone,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -861,18 +966,12 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 'Status - ${client.status}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 4),
               Text(
                 'Última interação: ${client.lastInteraction}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
               ),
               const SizedBox(height: 16),
               GestureDetector(

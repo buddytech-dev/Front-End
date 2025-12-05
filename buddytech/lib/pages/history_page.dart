@@ -6,7 +6,8 @@ import '../services/interaction_history_service.dart';
 import '../utils/responsive.dart';
 
 class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+  final bool embedded;
+  const HistoryPage({super.key, this.embedded = false});
 
   @override
   State<HistoryPage> createState() => _HistoryPageState();
@@ -27,11 +28,11 @@ class _HistoryPageState extends State<HistoryPage> {
 
   Future<void> _loadHistory() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final history = await _historyService.getHistory();
       final stats = await _historyService.getStatistics();
-      
+
       setState(() {
         _history = history;
         _statistics = stats;
@@ -57,6 +58,21 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: Colors.grey.shade50,
+        child: Column(
+          children: [
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildContent(),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Column(
@@ -77,12 +93,20 @@ class _HistoryPageState extends State<HistoryPage> {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
-        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+        horizontal: Responsive.value(
+          context,
+          mobile: 16,
+          tablet: 24,
+          desktop: 40,
+        ),
+        vertical: Responsive.value(
+          context,
+          mobile: 12,
+          tablet: 16,
+          desktop: 20,
+        ),
       ),
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -148,7 +172,9 @@ class _HistoryPageState extends State<HistoryPage> {
     return SingleChildScrollView(
       child: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+          constraints: BoxConstraints(
+            maxWidth: Responsive.maxContentWidth(context),
+          ),
           padding: EdgeInsets.all(Responsive.padding(context)),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,10 +271,7 @@ class _HistoryPageState extends State<HistoryPage> {
           ),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
         ],
@@ -319,11 +342,7 @@ class _HistoryPageState extends State<HistoryPage> {
               color: Colors.grey.shade100,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.history,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
+            child: Icon(Icons.history, size: 64, color: Colors.grey.shade400),
           ),
           const SizedBox(height: 24),
           Text(
@@ -338,10 +357,7 @@ class _HistoryPageState extends State<HistoryPage> {
           Text(
             'Registre interações nos detalhes dos leads\npara vê-las aqui',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -388,13 +404,11 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Divider(color: Colors.grey.shade300),
-                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
                 ],
               ),
             ),
-            
+
             // Itens do dia
             ...entry.value.map((item) => _buildHistoryItem(item)),
           ],
@@ -437,7 +451,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              
+
               // Info
               Expanded(
                 child: Column(
@@ -491,7 +505,7 @@ class _HistoryPageState extends State<HistoryPage> {
                   ],
                 ),
               ),
-              
+
               // Score
               if (item.scoreAfter != null)
                 Container(
@@ -509,10 +523,7 @@ class _HistoryPageState extends State<HistoryPage> {
                     children: [
                       const Text(
                         'Score',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.white70,
-                        ),
+                        style: TextStyle(fontSize: 10, color: Colors.white70),
                       ),
                       Text(
                         '${item.scoreAfter}',
@@ -527,9 +538,9 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Conteúdo da interação
           Container(
             width: double.infinity,
@@ -540,13 +551,10 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
             child: Text(
               item.content,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade700,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
           ),
-          
+
           // Sugestão da IA (se houver)
           if (item.aiSuggestion != null && item.aiSuggestion!.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -555,15 +563,10 @@ class _HistoryPageState extends State<HistoryPage> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.purple.shade50,
-                    Colors.blue.shade50,
-                  ],
+                  colors: [Colors.purple.shade50, Colors.blue.shade50],
                 ),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.purple.shade200,
-                ),
+                border: Border.all(color: Colors.purple.shade200),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,24 +611,17 @@ class _HistoryPageState extends State<HistoryPage> {
               ),
             ),
           ],
-          
+
           // Probabilidade (se houver)
           if (item.probabilityAfter != null) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(
-                  Icons.trending_up,
-                  size: 16,
-                  color: Colors.green.shade500,
-                ),
+                Icon(Icons.trending_up, size: 16, color: Colors.green.shade500),
                 const SizedBox(width: 6),
                 Text(
                   'Probabilidade de fechamento: ',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
                 Text(
                   '${(item.probabilityAfter! * 100).toInt()}%',

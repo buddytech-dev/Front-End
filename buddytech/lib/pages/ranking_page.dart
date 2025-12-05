@@ -29,7 +29,8 @@ class SellerRanking {
 }
 
 class RankingPage extends StatefulWidget {
-  const RankingPage({super.key});
+  final bool embedded;
+  const RankingPage({super.key, this.embedded = false});
 
   @override
   State<RankingPage> createState() => _RankingPageState();
@@ -60,7 +61,7 @@ class _RankingPageState extends State<RankingPage> {
 
       // Busca todos os vendedores
       final sellersResponse = await _apiService.getAllSellers();
-      
+
       if (!sellersResponse.isSuccess) {
         setState(() {
           _error = sellersResponse.error;
@@ -70,42 +71,49 @@ class _RankingPageState extends State<RankingPage> {
       }
 
       final sellers = sellersResponse.data ?? [];
-      
+
       // Busca todos os leads para calcular estatísticas
       final leadsResponse = await _apiService.getAllLeads();
       final allLeads = leadsResponse.data ?? [];
 
       // Calcula estatísticas por vendedor
       final List<SellerRanking> rankings = [];
-      
+
       for (final seller in sellers) {
         // Filtra leads deste vendedor
-        final sellerLeads = allLeads.where((l) => l.sellerId == seller.id).toList();
-        final leadsWon = sellerLeads.where((l) => 
-          l.status?.toLowerCase() == 'won' || 
-          l.status?.toLowerCase() == 'closed'
-        ).length;
-        
-        final conversionRate = sellerLeads.isNotEmpty 
-            ? (leadsWon / sellerLeads.length) * 100 
+        final sellerLeads = allLeads
+            .where((l) => l.sellerId == seller.id)
+            .toList();
+        final leadsWon = sellerLeads
+            .where(
+              (l) =>
+                  l.status?.toLowerCase() == 'won' ||
+                  l.status?.toLowerCase() == 'closed',
+            )
+            .length;
+
+        final conversionRate = sellerLeads.isNotEmpty
+            ? (leadsWon / sellerLeads.length) * 100
             : 0.0;
 
-        rankings.add(SellerRanking(
-          id: seller.id,
-          name: seller.name ?? 'Vendedor',
-          email: seller.email,
-          photoUrl: seller.photoUrl,
-          totalPoints: seller.currentPoints ?? 0,
-          leadsCount: sellerLeads.length,
-          leadsWon: leadsWon,
-          conversionRate: conversionRate,
-          rank: 0, // Será calculado depois
-        ));
+        rankings.add(
+          SellerRanking(
+            id: seller.id,
+            name: seller.name ?? 'Vendedor',
+            email: seller.email,
+            photoUrl: seller.photoUrl,
+            totalPoints: seller.currentPoints ?? 0,
+            leadsCount: sellerLeads.length,
+            leadsWon: leadsWon,
+            conversionRate: conversionRate,
+            rank: 0, // Será calculado depois
+          ),
+        );
       }
 
       // Ordena por pontos (maior primeiro)
       rankings.sort((a, b) => b.totalPoints.compareTo(a.totalPoints));
-      
+
       // Atribui posições no ranking
       for (int i = 0; i < rankings.length; i++) {
         rankings[i] = SellerRanking(
@@ -135,6 +143,23 @@ class _RankingPageState extends State<RankingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: Colors.grey.shade50,
+        child: Column(
+          children: [
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? _buildError()
+                  : _buildContent(),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Column(
@@ -144,8 +169,8 @@ class _RankingPageState extends State<RankingPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? _buildError()
-                    : _buildContent(),
+                ? _buildError()
+                : _buildContent(),
           ),
         ],
       ),
@@ -157,12 +182,20 @@ class _RankingPageState extends State<RankingPage> {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
-        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+        horizontal: Responsive.value(
+          context,
+          mobile: 16,
+          tablet: 24,
+          desktop: 40,
+        ),
+        vertical: Responsive.value(
+          context,
+          mobile: 12,
+          tablet: 16,
+          desktop: 20,
+        ),
       ),
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -256,15 +289,17 @@ class _RankingPageState extends State<RankingPage> {
     return SingleChildScrollView(
       child: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+          constraints: BoxConstraints(
+            maxWidth: Responsive.maxContentWidth(context),
+          ),
           padding: EdgeInsets.all(Responsive.padding(context)),
           child: Column(
             children: [
               // Top 3 em destaque
               if (_rankings.length >= 3) _buildTopThree(),
-              
+
               SizedBox(height: Responsive.isMobile(context) ? 16 : 24),
-              
+
               // Lista completa
               _buildRankingList(),
             ],
@@ -304,10 +339,7 @@ class _RankingPageState extends State<RankingPage> {
           Text(
             'O ranking aparecerá quando houver vendedores cadastrados',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -345,39 +377,30 @@ class _RankingPageState extends State<RankingPage> {
       children: [
         // 2º lugar
         if (top3.length > 1)
-          SizedBox(
-            width: 200,
-            child: _buildPodiumItem(top3[1], 2, false),
-          ),
-        
+          SizedBox(width: 200, child: _buildPodiumItem(top3[1], 2, false)),
+
         const SizedBox(width: 16),
-        
+
         // 1º lugar (maior)
         if (top3.isNotEmpty)
-          SizedBox(
-            width: 240,
-            child: _buildPodiumItem(top3[0], 1, true),
-          ),
-        
+          SizedBox(width: 240, child: _buildPodiumItem(top3[0], 1, true)),
+
         const SizedBox(width: 16),
-        
+
         // 3º lugar
         if (top3.length > 2)
-          SizedBox(
-            width: 200,
-            child: _buildPodiumItem(top3[2], 3, false),
-          ),
+          SizedBox(width: 200, child: _buildPodiumItem(top3[2], 3, false)),
       ],
     );
   }
 
   Widget _buildPodiumItem(SellerRanking seller, int position, bool isFirst) {
     final isCurrentUser = seller.id == _currentUserId;
-    
+
     Color medalColor;
     IconData medalIcon;
     double avatarSize;
-    
+
     switch (position) {
       case 1:
         medalColor = const Color(0xFFFFD700); // Ouro
@@ -405,12 +428,12 @@ class _RankingPageState extends State<RankingPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: isCurrentUser 
+        border: isCurrentUser
             ? Border.all(color: AppColors.primary, width: 2)
             : null,
         boxShadow: [
           BoxShadow(
-            color: isFirst 
+            color: isFirst
                 ? medalColor.withOpacity(0.3)
                 : Colors.black.withOpacity(0.05),
             blurRadius: isFirst ? 20 : 10,
@@ -444,7 +467,8 @@ class _RankingPageState extends State<RankingPage> {
                       ? Image.network(
                           seller.photoUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildDefaultAvatar(seller.name),
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultAvatar(seller.name),
                         )
                       : _buildDefaultAvatar(seller.name),
                 ),
@@ -473,9 +497,9 @@ class _RankingPageState extends State<RankingPage> {
               ),
             ],
           ),
-          
+
           SizedBox(height: isFirst ? 16 : 12),
-          
+
           // Nome
           Text(
             seller.name,
@@ -488,7 +512,7 @@ class _RankingPageState extends State<RankingPage> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          
+
           if (isCurrentUser)
             Container(
               margin: const EdgeInsets.only(top: 4),
@@ -506,15 +530,18 @@ class _RankingPageState extends State<RankingPage> {
                 ),
               ),
             ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Pontos
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [medalColor.withOpacity(0.2), medalColor.withOpacity(0.1)],
+                colors: [
+                  medalColor.withOpacity(0.2),
+                  medalColor.withOpacity(0.1),
+                ],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -534,9 +561,9 @@ class _RankingPageState extends State<RankingPage> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Estatísticas
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -559,10 +586,7 @@ class _RankingPageState extends State<RankingPage> {
         const SizedBox(width: 4),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
         ),
       ],
     );
@@ -570,8 +594,10 @@ class _RankingPageState extends State<RankingPage> {
 
   Widget _buildRankingList() {
     // Pula os primeiros 3 (já mostrados no pódio)
-    final restOfList = _rankings.length > 3 ? _rankings.skip(3).toList() : <SellerRanking>[];
-    
+    final restOfList = _rankings.length > 3
+        ? _rankings.skip(3).toList()
+        : <SellerRanking>[];
+
     if (restOfList.isEmpty && _rankings.length <= 3) {
       // Mostra todos se tiver 3 ou menos
       return Column(
@@ -586,7 +612,10 @@ class _RankingPageState extends State<RankingPage> {
             ),
           ),
           const SizedBox(height: 12),
-          ...List.generate(_rankings.length, (i) => _buildRankingItem(_rankings[i])),
+          ...List.generate(
+            _rankings.length,
+            (i) => _buildRankingItem(_rankings[i]),
+          ),
         ],
       );
     }
@@ -618,7 +647,7 @@ class _RankingPageState extends State<RankingPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: isCurrentUser 
+        border: isCurrentUser
             ? Border.all(color: AppColors.primary, width: 2)
             : null,
         boxShadow: [
@@ -650,9 +679,9 @@ class _RankingPageState extends State<RankingPage> {
               ),
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Avatar
           Container(
             width: 45,
@@ -669,14 +698,15 @@ class _RankingPageState extends State<RankingPage> {
                   ? Image.network(
                       seller.photoUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(seller.name),
+                      errorBuilder: (_, __, ___) =>
+                          _buildDefaultAvatar(seller.name),
                     )
                   : _buildDefaultAvatar(seller.name),
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Info
           Expanded(
             child: Column(
@@ -695,7 +725,10 @@ class _RankingPageState extends State<RankingPage> {
                     if (isCurrentUser) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(8),
@@ -719,21 +752,31 @@ class _RankingPageState extends State<RankingPage> {
                     const SizedBox(width: 4),
                     Text(
                       '${seller.leadsCount} leads',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.check_circle, size: 14, color: Colors.green.shade400),
+                    Icon(
+                      Icons.check_circle,
+                      size: 14,
+                      color: Colors.green.shade400,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${seller.leadsWon} ganhos',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          
+
           // Pontos
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -766,7 +809,7 @@ class _RankingPageState extends State<RankingPage> {
 
   Widget _buildDefaultAvatar(String name) {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    
+
     return Container(
       color: AppColors.primary.withOpacity(0.1),
       child: Center(

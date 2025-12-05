@@ -7,7 +7,8 @@ import '../routes/routes.dart';
 import '../utils/responsive.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final bool embedded;
+  const ProfilePage({super.key, this.embedded = false});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -15,7 +16,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final SupabaseClient _supabase = Supabase.instance.client;
-  
+
   String _userName = 'Nome do Usuário';
   String _userRole = 'Vendedor';
   String? _profileImageUrl;
@@ -30,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserProfile() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final user = _supabase.auth.currentUser;
       if (user != null) {
@@ -40,7 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
         //     .select()
         //     .eq('id', user.id)
         //     .single();
-        // 
+        //
         // setState(() {
         //   _userName = response['name'] ?? 'Nome do Usuário';
         //   _userRole = response['role'] ?? 'Vendedor';
@@ -49,9 +50,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Por enquanto usa dados do auth
         setState(() {
-          _userName = user.userMetadata?['name'] ?? 
-                      user.email?.split('@').first ?? 
-                      'Nome do Usuário';
+          _userName =
+              user.userMetadata?['name'] ??
+              user.email?.split('@').first ??
+              'Nome do Usuário';
           _userRole = user.userMetadata?['role'] ?? 'Vendedor';
           _profileImageUrl = user.userMetadata?['avatar_url'];
         });
@@ -84,16 +86,16 @@ class _ProfilePageState extends State<ProfilePage> {
         //   await _supabase.storage
         //       .from('avatars')
         //       .uploadBinary(fileName, _profileImageBytes!);
-        //   
+        //
         //   final imageUrl = _supabase.storage
         //       .from('avatars')
         //       .getPublicUrl(fileName);
-        //   
+        //
         //   await _supabase
         //       .from('profiles')
         //       .update({'avatar_url': imageUrl})
         //       .eq('id', user.id);
-        //   
+        //
         //   setState(() => _profileImageUrl = imageUrl);
         // }
 
@@ -119,18 +121,25 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _logout() async {
     await _supabase.auth.signOut();
-    
+
     if (!mounted) return;
-    
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.login,
-      (_) => false,
-    );
+
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            Expanded(child: SingleChildScrollView(child: _buildContent())),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -139,11 +148,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildHeader(),
 
           // Conteúdo principal
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildContent(),
-            ),
-          ),
+          Expanded(child: SingleChildScrollView(child: _buildContent())),
         ],
       ),
     );
@@ -151,23 +156,31 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
-        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+        horizontal: Responsive.value(
+          context,
+          mobile: 16,
+          tablet: 24,
+          desktop: 40,
+        ),
+        vertical: Responsive.value(
+          context,
+          mobile: 12,
+          tablet: 16,
+          desktop: 20,
+        ),
       ),
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
             IconButton(
               icon: Icon(
-                Icons.arrow_back, 
-                color: Colors.white, 
+                Icons.arrow_back,
+                color: Colors.white,
                 size: isMobile ? 24 : 28,
               ),
               onPressed: () => Navigator.pop(context),
@@ -200,11 +213,18 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildContent() {
     final isMobile = Responsive.isMobile(context);
     final isDesktop = Responsive.isDesktop(context);
-    final imageSize = Responsive.value<double>(context, mobile: 120, tablet: 140, desktop: 150);
-    
+    final imageSize = Responsive.value<double>(
+      context,
+      mobile: 120,
+      tablet: 140,
+      desktop: 150,
+    );
+
     return Center(
       child: Container(
-        constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+        constraints: BoxConstraints(
+          maxWidth: Responsive.maxContentWidth(context),
+        ),
         padding: EdgeInsets.all(Responsive.padding(context)),
         child: Column(
           children: [
@@ -237,10 +257,7 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: isMobile ? 32 : 48),
 
             // Botões de ação - Grid em desktop, lista em mobile
-            if (isDesktop)
-              _buildDesktopActions()
-            else
-              _buildMobileActions(),
+            if (isDesktop) _buildDesktopActions() else _buildMobileActions(),
           ],
         ),
       ),
@@ -290,10 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: 300,
-          child: _buildLogoutButton(),
-        ),
+        SizedBox(width: 300, child: _buildLogoutButton()),
       ],
     );
   }
@@ -332,7 +346,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileImage(double size) {
     final buttonSize = size * 0.3;
-    
+
     return Stack(
       children: [
         Container(
@@ -340,10 +354,7 @@ class _ProfilePageState extends State<ProfilePage> {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFF3B82F6),
-              width: 3,
-            ),
+            border: Border.all(color: const Color(0xFF3B82F6), width: 3),
           ),
           child: ClipOval(
             child: _profileImageBytes != null
@@ -354,14 +365,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     height: size,
                   )
                 : _profileImageUrl != null
-                    ? Image.network(
-                        _profileImageUrl!,
-                        fit: BoxFit.cover,
-                        width: size,
-                        height: size,
-                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
-                      )
-                    : _buildDefaultAvatar(size),
+                ? Image.network(
+                    _profileImageUrl!,
+                    fit: BoxFit.cover,
+                    width: size,
+                    height: size,
+                    errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
+                  )
+                : _buildDefaultAvatar(size),
           ),
         ),
         // Botão de editar foto
@@ -396,9 +407,7 @@ class _ProfilePageState extends State<ProfilePage> {
               shape: BoxShape.circle,
             ),
             child: const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-              ),
+              child: CircularProgressIndicator(color: Colors.white),
             ),
           ),
       ],
@@ -418,9 +427,13 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, {required VoidCallback onTap}) {
+  Widget _buildActionButton(
+    String text,
+    IconData icon, {
+    required VoidCallback onTap,
+  }) {
     final isMobile = Responsive.isMobile(context);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -440,7 +453,11 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: const Color(0xFF3B82F6), size: isMobile ? 20 : 22),
+              Icon(
+                icon,
+                color: const Color(0xFF3B82F6),
+                size: isMobile ? 20 : 22,
+              ),
               SizedBox(width: isMobile ? 8 : 12),
               Text(
                 text,
@@ -459,7 +476,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildLogoutButton() {
     final isMobile = Responsive.isMobile(context);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -479,7 +496,11 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.logout, color: Colors.red.shade400, size: isMobile ? 20 : 22),
+              Icon(
+                Icons.logout,
+                color: Colors.red.shade400,
+                size: isMobile ? 20 : 22,
+              ),
               SizedBox(width: isMobile ? 8 : 12),
               Text(
                 'Sair',

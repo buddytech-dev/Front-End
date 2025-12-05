@@ -47,3 +47,4 @@ flutter:
     - assets/logo.png
     - assets/.env
     - assets/icon.png
+    - assets/nav.png
