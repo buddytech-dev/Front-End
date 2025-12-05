@@ -509,9 +509,6 @@ class LeadDto {
   }
 
   factory LeadDto.fromJson(Map<String, dynamic> json) {
-    // DEBUG: Imprime o JSON para ver o que a API retorna
-    print('🔍 LeadDto.fromJson - JSON recebido: $json');
-
     // Tenta pegar a URL da logo de várias fontes possíveis
     final logoUrl =
         json['logoUrl'] ??
@@ -722,6 +719,9 @@ class CreateLeadDto {
     if (revenueRange != null) map['revenueRange'] = revenueRange;
     if (description != null) map['description'] = description;
     if (leadSource != null) map['leadSource'] = leadSource;
+
+    // DEBUG: Mostra o que está sendo enviado para a API
+    print('📤 CreateLeadDto.toJson - Enviando para API: $map');
 
     return map;
   }
