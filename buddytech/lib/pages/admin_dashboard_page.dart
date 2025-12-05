@@ -150,6 +150,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             const SizedBox(height: 8),
             _buildDrawerItem('Dashboard', Icons.dashboard, 0),
             _buildDrawerItem('Usuários', Icons.people, 1),
+            _buildDrawerItem('Contas', Icons.manage_accounts, 4),
             _buildDrawerItem('Relatórios', Icons.bar_chart, 2),
             _buildDrawerItem('Configurações', Icons.settings, 3),
             const Spacer(),
@@ -243,6 +244,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   void _onNavTap(int index) {
     if (index == 1) {
       Navigator.pushNamed(context, AppRoutes.adminUsers);
+    } else if (index == 4) {
+      Navigator.pushNamed(context, AppRoutes.adminAccounts);
     } else {
       setState(() {
         _selectedNavIndex = index;

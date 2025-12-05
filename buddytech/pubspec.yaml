@@ -36,6 +36,9 @@ dependencies:
   # File picker para selecionar imagens
   file_picker: ^8.0.0
 
+  # HTTP client para chamadas à API
+  http: ^1.2.0
+
 # -------------------------------------------
 #       DEPENDÊNCIAS DE DESENVOLVIMENTO
 # -------------------------------------------

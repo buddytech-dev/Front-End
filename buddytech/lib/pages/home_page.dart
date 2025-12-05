@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_colors.dart';
 import '../routes/routes.dart';
 import '../models/client_model.dart';
-import '../services/client_service.dart';
+import '../services/api_service.dart';
 import '../services/admin_service.dart';
 import '../utils/responsive.dart';
 
@@ -16,7 +16,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedNavIndex = 0;
-  final ClientService _clientService = ClientService();
+  final ApiService _apiService = ApiService();
   final AdminService _adminService = AdminService();
   List<ClientModel> _clients = [];
   bool _isLoading = true;
@@ -44,11 +44,20 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      final clients = await _clientService.getClients();
-      setState(() {
-        _clients = clients;
-        _isLoading = false;
-      });
+      final response = await _apiService.getLeadsBySeller();
+      
+      if (response.isSuccess) {
+        final leads = response.data ?? [];
+        setState(() {
+          _clients = leads.map((lead) => ClientModel.fromLeadDto(lead)).toList();
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = response.error;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _error = 'Erro ao carregar clientes: $e';
@@ -419,7 +428,7 @@ class _HomePageState extends State<HomePage> {
         child: Padding(
           padding: EdgeInsets.all(40),
           child: CircularProgressIndicator(
-            color: Color(0xFF3B82F6),
+            color: AppColors.primary,
           ),
         ),
       );
@@ -431,11 +440,11 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(40),
           child: Column(
             children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+              Icon(Icons.error_outline, size: 48, color: AppColors.error),
               const SizedBox(height: 16),
               Text(
                 _error!,
-                style: TextStyle(color: Colors.red.shade600),
+                style: const TextStyle(color: AppColors.error),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -450,12 +459,63 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (_clients.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(40),
-          child: Text(
-            'Nenhum cliente encontrado',
-            style: TextStyle(color: Colors.grey),
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Ícone ilustrativo
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.people_outline,
+                  size: 60,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Título
+              Text(
+                'Você não tem clientes no momento',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 20),
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              
+              // Descrição
+              Text(
+                'Seus leads aparecerão aqui assim que forem atribuídos a você.',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 14),
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              
+              // Botão de atualizar
+              OutlinedButton.icon(
+                onPressed: _loadClients,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Atualizar'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
           ),
         ),
       );

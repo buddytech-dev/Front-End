@@ -6,6 +6,7 @@ import '../pages/history_page.dart';
 import '../pages/client_details_page.dart';
 import '../pages/admin_dashboard_page.dart';
 import '../pages/admin_users_page.dart';
+import '../pages/admin_accounts_page.dart';
 import '../models/client_model.dart';
 
 /// Argumentos para navegação à página de detalhes do cliente
@@ -70,6 +71,7 @@ class AppRoutes {
   // Área administrativa
   static const String adminDashboard = '/admin';
   static const String adminUsers = '/admin/users';
+  static const String adminAccounts = '/admin/accounts';
 }
 
 /// Gerador de rotas do aplicativo
@@ -117,6 +119,9 @@ class AppRouter {
         
       case AppRoutes.adminUsers:
         return _buildRoute(const AdminUsersPage(), settings);
+        
+      case AppRoutes.adminAccounts:
+        return _buildRoute(const AdminAccountsPage(), settings);
 
       // ========== ROTA NÃO ENCONTRADA ==========
       default:

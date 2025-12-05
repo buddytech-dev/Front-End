@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 /// Modelo de dados do Cliente/Lead
 /// Preparado para receber dados de API/Supabase
@@ -103,6 +104,53 @@ class ClientModel {
       metrics: json['metrics'] != null
           ? ClientMetrics.fromJson(json['metrics'])
           : null,
+    );
+  }
+
+  /// Factory para criar a partir de LeadDto da API
+  factory ClientModel.fromLeadDto(LeadDto lead) {
+    // Gera cor baseada no nome da empresa (para variedade visual)
+    final colors = ['3B82F6', 'EF4444', '10B981', 'F59E0B', '8B5CF6', 'EC4899'];
+    final colorIndex = lead.companyName.length % colors.length;
+    
+    // Gera ícone baseado no status ou nome
+    String iconName = 'business';
+    if (lead.status?.toLowerCase().contains('hot') == true) {
+      iconName = 'local_fire_department';
+    } else if (lead.status?.toLowerCase().contains('cold') == true) {
+      iconName = 'ac_unit';
+    }
+
+    // Formata a última interação
+    String lastInteractionStr = 'Sem interações';
+    if (lead.lastInteraction != null) {
+      final diff = DateTime.now().difference(lead.lastInteraction!);
+      if (diff.inDays == 0) {
+        lastInteractionStr = 'Hoje';
+      } else if (diff.inDays == 1) {
+        lastInteractionStr = 'Ontem';
+      } else if (diff.inDays < 7) {
+        lastInteractionStr = 'Há ${diff.inDays} dias';
+      } else if (diff.inDays < 30) {
+        lastInteractionStr = 'Há ${(diff.inDays / 7).floor()} semanas';
+      } else {
+        lastInteractionStr = 'Há ${(diff.inDays / 30).floor()} meses';
+      }
+    }
+
+    return ClientModel(
+      id: lead.id,
+      rank: lead.rank ?? 0,
+      companyName: lead.companyName,
+      companyEmail: lead.companyEmail ?? '',
+      contactName: lead.contactName ?? '',
+      contactPhone: lead.contactPhone ?? '',
+      status: lead.status ?? 'Novo',
+      lastInteraction: lastInteractionStr,
+      logoColorHex: colors[colorIndex],
+      logoIconName: iconName,
+      aiSummary: lead.aiSummary ?? 'Análise de IA ainda não disponível para este lead.',
+      recommendedActions: lead.recommendedActions ?? ['Fazer primeiro contato', 'Agendar reunião'],
     );
   }
 
