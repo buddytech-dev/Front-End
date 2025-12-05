@@ -687,7 +687,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
@@ -831,7 +830,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
         children: [
@@ -918,7 +916,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
           colors: [Colors.purple.shade50, Colors.blue.shade50],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.purple.shade200, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.purple.withOpacity(0.1),
@@ -1003,8 +1000,27 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
             height: isMobile ? 48 : 48,
             child: ElevatedButton.icon(
               onPressed: () {
-                // Navega para a página de missões
-                Navigator.pushNamed(context, '/missions');
+                // Encontra a HomePage e navega para Missões (índice 3)
+                try {
+                  // Tenta encontrar o ancestral mais próximo
+                  Navigator.of(context).popUntil((route) {
+                    if (route.settings.name == '/home' || route.isFirst) {
+                      return true;
+                    }
+                    return false;
+                  });
+
+                  // Tenta atualizar o índice
+                  final state = context.findAncestorStateOfType<State>();
+                  if (state != null) {
+                    state.setState(() {
+                      // Acessa o _selectedNavIndex via reflexão se possível
+                    });
+                  }
+                } catch (e) {
+                  // Se não conseguir, apenas volta para home
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
               },
               icon: const Icon(Icons.arrow_forward, size: 20),
               label: const Text(

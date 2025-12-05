@@ -329,7 +329,7 @@ class _MissionsPageState extends State<MissionsPage> {
                   )
                 else
                   GridView.count(
-                    crossAxisCount: 2,
+                    crossAxisCount: Responsive.isDesktop(context) ? 3 : 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     shrinkWrap: true,
@@ -360,7 +360,7 @@ class _MissionsPageState extends State<MissionsPage> {
                   )
                 else
                   GridView.count(
-                    crossAxisCount: 2,
+                    crossAxisCount: Responsive.isDesktop(context) ? 3 : 2,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     shrinkWrap: true,

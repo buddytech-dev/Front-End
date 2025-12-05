@@ -107,29 +107,45 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
+    final isDesktop = Responsive.isDesktop(context);
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
-      drawer: isMobile ? _buildDrawer() : null,
-      body: Column(
+      drawer: _buildDrawer(),
+      body: Row(
         children: [
-          // NAVBAR
-          _buildNavbar(context),
-
-          // CONTEÚDO PRINCIPAL
+          // Sidebar para desktop
+          if (isDesktop)
+            SizedBox(
+              width: 280,
+              child: _buildDesktopSidebar(),
+            ),
+          
+          // Conteúdo principal
           Expanded(
-            child: IndexedStack(
-              index: _selectedNavIndex,
+            child: Column(
               children: [
-                SingleChildScrollView(
-                  child: _buildMainContent(context),
-                ), // 0 - Home
-                HistoryPage(embedded: true), // 1 - Histórico
-                RankingPage(embedded: true), // 2 - Ranking
-                MissionsPage(embedded: true), // 3 - Missões
-                ProfilePage(embedded: true), // 4 - Perfil
-                SellerDashboardPage(embedded: true), // 5 - Dashboard
+                // Navbar mobile/tablet
+                if (!isDesktop)
+                  _buildNavbar(context),
+
+                // CONTEÚDO PRINCIPAL
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedNavIndex,
+                    children: [
+                      SingleChildScrollView(
+                        child: _buildMainContent(context),
+                      ), // 0 - Home
+                      HistoryPage(embedded: true), // 1 - Histórico
+                      RankingPage(embedded: true), // 2 - Ranking
+                      MissionsPage(embedded: true), // 3 - Missões
+                      ProfilePage(embedded: true), // 4 - Perfil
+                      SellerDashboardPage(embedded: true), // 5 - Dashboard
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -277,6 +293,148 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Widget _buildDesktopSidebar() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(2, 0),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // Logo e nome
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/Logo.png',
+                    height: 50,
+                    width: 50,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.business,
+                        color: Color(0xFF3B82F6),
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'BuddyTech',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(color: Colors.white24),
+
+            // Menu items
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  _buildSidebarItem('Home', Icons.home, 0),
+                  _buildSidebarItem('Histórico', Icons.history, 1),
+                  _buildSidebarItem('Ranking', Icons.leaderboard, 2),
+                  _buildSidebarItem('Missões', Icons.assignment, 3),
+                  _buildSidebarItem('Perfil', Icons.person, 4),
+                  _buildSidebarItem('Dashboard', Icons.dashboard, 5),
+                  
+                  if (_isAdmin) ...[
+                    const Divider(color: Colors.white24, height: 24),
+                    _buildSidebarAdminItem(),
+                  ],
+                ],
+              ),
+            ),
+
+            const Divider(color: Colors.white24),
+
+            // Logout
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => logout(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade400,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: const Text('Sair'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem(String title, IconData icon, int index) {
+    final isSelected = _selectedNavIndex == index;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected ? Colors.white : Colors.white70,
+          size: 22,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white70,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+        selected: isSelected,
+        onTap: () => _onNavTap(index),
+      ),
+    );
+  }
+
+  Widget _buildSidebarAdminItem() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.adminDashboard),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        ),
+        icon: const Icon(Icons.admin_panel_settings, size: 18),
+        label: const Text('Admin', style: TextStyle(fontSize: 14)),
+      ),
+    );
+  }
+
   Widget _buildNavbar(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final horizontalPadding = Responsive.padding(context);
@@ -294,9 +452,16 @@ class _HomePageState extends State<HomePage> {
         bottom: false,
         child: Row(
           children: [
-            // Mobile layout: logo left, title center, avatar right
-            if (isMobile) ...[
-              // Logo
+            // Mobile: Hambúrguer
+            if (isMobile)
+              IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white, size: 28),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                tooltip: 'Menu',
+              ),
+
+            // Logo
+            if (isMobile)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Image.asset(
@@ -315,7 +480,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // Centered title with more padding
+            // Centered title with more padding
+            if (isMobile)
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 4.0),
@@ -332,7 +498,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // Avatar right
+            // Avatar right
+            if (isMobile)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: CircleAvatar(
@@ -346,143 +513,7 @@ class _HomePageState extends State<HomePage> {
                       : null,
                 ),
               ),
-            ],
-
-            // Desktop / Tablet layout: logo+name + nav items
-            if (!isMobile) ...[
-              // Logo + Nome
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/Logo.png',
-                    height: isMobile ? 28 : 36,
-                    width: isMobile ? 28 : 36,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: isMobile ? 28 : 36,
-                      height: isMobile ? 28 : 36,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.business,
-                        color: Color(0xFF3B82F6),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'BuddyTech',
-                    style: TextStyle(
-                      fontSize: isMobile ? 18 : 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-
-              const Spacer(),
-
-              Row(
-                children: [
-                  _navItem('Home', 0),
-                  const SizedBox(width: 16),
-                  _navItem('Dashboard', 4),
-                  const SizedBox(width: 16),
-                  _navItem('Histórico', 1),
-                  const SizedBox(width: 16),
-                  _navItem('Ranking', 2),
-                  const SizedBox(width: 16),
-                  _navItem('Perfil', 3),
-                  if (_isAdmin) ...[
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, AppRoutes.adminDashboard);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.admin_panel_settings,
-                              color: AppColors.primaryDark,
-                              size: 18,
-                            ),
-                            SizedBox(width: 6),
-                            Text(
-                              'Admin',
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: AppColors.primaryDark,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(width: 24),
-                  IconButton(
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    onPressed: () => logout(context),
-                    tooltip: 'Sair',
-                  ),
-                ],
-              ),
-            ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(String text, int index) {
-    final isActive = _selectedNavIndex == index;
-    return _NavItemContent(
-      text: text,
-      index: index,
-      isActive: isActive,
-      onTap: () => _onNavTap(index),
-    );
-  }
-
-  Widget _NavItemContent({
-    required String text,
-    required int index,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(25),
-            border: !isActive
-                ? Border.all(color: Colors.white.withOpacity(0.3), width: 1)
-                : null,
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 15,
-              color: isActive ? const Color(0xFF2563EB) : Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ),
       ),
     );

@@ -226,89 +226,103 @@ class _ProfilePageState extends State<ProfilePage> {
           maxWidth: Responsive.maxContentWidth(context),
         ),
         padding: EdgeInsets.all(Responsive.padding(context)),
-        child: Column(
-          children: [
-            SizedBox(height: isMobile ? 12 : 20),
-
-            // Foto de perfil
-            _buildProfileImage(imageSize),
-
-            SizedBox(height: isMobile ? 16 : 24),
-
-            // Nome e cargo
-            Text(
-              _userName,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 28),
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+        child: isDesktop
+            ? Row(
+                children: [
+                  // Coluna esquerda - Foto e info
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(height: isMobile ? 12 : 20),
+                        _buildProfileImage(imageSize),
+                        SizedBox(height: isMobile ? 16 : 24),
+                        Text(
+                          _userName,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 28),
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _userRole,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 16),
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                  // Coluna direita - Botões
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildActionButton(
+                          'Estatísticas',
+                          Icons.bar_chart,
+                          onTap: _showStatistics,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          'Leads Atendidos',
+                          Icons.people_outline,
+                          onTap: _showAttendedLeads,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          'Taxa de conversão',
+                          Icons.trending_up,
+                          onTap: _showConversionRate,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          'Configurações',
+                          Icons.settings_outlined,
+                          onTap: _showSettings,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(child: _buildLogoutButton()),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  SizedBox(height: isMobile ? 12 : 20),
+                  _buildProfileImage(imageSize),
+                  SizedBox(height: isMobile ? 16 : 24),
+                  Text(
+                    _userName,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, base: 28),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _userRole,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, base: 16),
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  SizedBox(height: isMobile ? 32 : 48),
+                  _buildMobileActions(),
+                ],
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _userRole,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 16),
-                color: Colors.grey.shade600,
-              ),
-            ),
-
-            SizedBox(height: isMobile ? 32 : 48),
-
-            // Botões de ação - Grid em desktop, lista em mobile
-            if (isDesktop) _buildDesktopActions() else _buildMobileActions(),
-          ],
-        ),
       ),
-    );
-  }
-
-  Widget _buildDesktopActions() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Estatísticas',
-                Icons.bar_chart,
-                onTap: _showStatistics,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionButton(
-                'Leads Atendidos',
-                Icons.people_outline,
-                onTap: _showAttendedLeads,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Taxa de conversão',
-                Icons.trending_up,
-                onTap: _showConversionRate,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionButton(
-                'Configurações',
-                Icons.settings_outlined,
-                onTap: _showSettings,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        SizedBox(width: 300, child: _buildLogoutButton()),
-      ],
     );
   }
 
@@ -337,6 +351,12 @@ class _ProfilePageState extends State<ProfilePage> {
           'Configurações',
           Icons.settings_outlined,
           onTap: _showSettings,
+        ),
+        const SizedBox(height: 12),
+        _buildActionButton(
+          'Dashboard',
+          Icons.dashboard,
+          onTap: _navigateToDashboard,
         ),
         const SizedBox(height: 20),
         _buildLogoutButton(),
@@ -656,48 +676,107 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showModalSheet({required String title, required Widget child}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+    final isDesktop = Responsive.isDesktop(context);
+
+    if (isDesktop) {
+      // Pop-up dialog centralizado para desktop
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.5,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Expanded(child: SingleChildScrollView(child: child)),
+              ],
             ),
-            Expanded(child: child),
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      // Bottom sheet para mobile/tablet
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: child),
+            ],
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildStatCard(String label, String value, Color color) {
@@ -828,6 +907,29 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
+  }
+
+  void _navigateToDashboard() {
+    if (widget.embedded) {
+      // Se está embedded, tenta encontrar o state da HomePage e mudar índice
+      try {
+        final homeState = context.findAncestorStateOfType<State>();
+        if (homeState != null) {
+          // Acessa a propriedade _selectedNavIndex via dynamic
+          final stateAsDynamic = homeState as dynamic;
+          if (stateAsDynamic._selectedNavIndex != null) {
+            homeState.setState(() {
+              stateAsDynamic._selectedNavIndex = 5; // Dashboard é índice 5
+            });
+          }
+        }
+      } catch (e) {
+        print('Erro ao navegar para dashboard: $e');
+      }
+    } else {
+      // Se não está embedded, navega via rota
+      Navigator.popUntil(context, (route) => route.isFirst);
+    }
   }
 
   void _showLogoutConfirmation() {
