@@ -1,82 +1,49 @@
-# -------------------------------------------
-#   Projeto BuddyTech – Configuração Flutter
-# -------------------------------------------
-
 name: buddytech
 description: "Aplicação BuddyTech – MVP com Login via Supabase."
 publish_to: 'none'
 
-# -------------------------------------------
-#       Versão do App
-# -------------------------------------------
 version: 1.0.0+1
 
-# -------------------------------------------
-#   Versão do SDK Dart/Flutter suportado
-# -------------------------------------------
 environment:
   sdk: ">=3.9.2 <4.0.0"
 
-# -------------------------------------------
-#          DEPENDÊNCIAS DO APP
-# -------------------------------------------
 dependencies:
   flutter:
     sdk: flutter
-
-  # Ícones padrão iOS (usados por muitos widgets)
   cupertino_icons: ^1.0.8
-
-  # Biblioteca oficial do Supabase para Flutter
   supabase_flutter: ^2.10.3
-
-  # Permite usar arquivo .env com chaves privadas (SUPABASE_URL / SUPABASE_KEY)
   flutter_dotenv: ^6.0.0
-
-  # File picker para selecionar imagens
   file_picker: ^8.0.0
-
-  # HTTP client para chamadas à API
   http: ^1.2.0
-
-  # Formatação de datas
   intl: ^0.19.0
-
-  # Persistência local
   shared_preferences: ^2.2.2
 
-# -------------------------------------------
-#       DEPENDÊNCIAS DE DESENVOLVIMENTO
-# -------------------------------------------
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # Regras de lint recomendadas (boas práticas)
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
-# -------------------------------------------
-#         CONFIGURAÇÕES FLUTTER
-# -------------------------------------------
+# -------------------------------------------------
+#   Flutter Launcher Icons Configuration
+# -------------------------------------------------
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon.png
+
+  # Fundo sólido azul
+  adaptive_icon_background: "#005BEA"
+
+  adaptive_icon_foreground: assets/icon.png
+
+  min_sdk_android: 21
+
+
 flutter:
-
-  # Habilita o uso do pacote Material Icons
   uses-material-design: true
 
-  # -----------------------------------------
-  #    ASSETS do projeto
-  # -----------------------------------------
   assets:
-    - assets/
-    - assets/.env
     - assets/logo.png
-
-  # -----------------------------------------
-  #  (Opcional) Configurar fontes personalizadas
-  # -----------------------------------------
-  # fonts:
-  #   - family: Poppins
-  #     fonts:
-  #       - asset: assets/fonts/Poppins-Regular.ttf
-  #       - asset: assets/fonts/Poppins-Bold.ttf
-  #         weight: 700
+    - assets/.env
+    - assets/icon.png
