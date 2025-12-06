@@ -32,7 +32,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         final leads = data.map((json) => LeadDto.fromJson(json)).toList();
-        
+
         // Debug: Verifica dados da IA em cada lead
         for (var lead in leads) {
           print('🤖 Lead "${lead.displayName}" - Dados IA:');
@@ -42,7 +42,7 @@ class ApiService {
           print('   suggestedContactType: ${lead.suggestedContactType}');
           print('   priority: ${lead.priority}');
         }
-        
+
         return ApiResponse.success(leads);
       } else if (response.statusCode == 404) {
         return ApiResponse.success([]);
@@ -101,9 +101,15 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('📊 Dados parseados:');
-        print('   - currentScore: ${data['currentScore'] ?? data['CurrentScore']}');
-        print('   - probabilityOfClosing: ${data['probabilityOfClosing'] ?? data['ProbabilityOfClosing']}');
-        print('   - interactionsCount: ${data['interactionsCount'] ?? data['InteractionsCount']}');
+        print(
+          '   - currentScore: ${data['currentScore'] ?? data['CurrentScore']}',
+        );
+        print(
+          '   - probabilityOfClosing: ${data['probabilityOfClosing'] ?? data['ProbabilityOfClosing']}',
+        );
+        print(
+          '   - interactionsCount: ${data['interactionsCount'] ?? data['InteractionsCount']}',
+        );
         print('   - priority: ${data['priority'] ?? data['Priority']}');
         return ApiResponse.success(LeadDto.fromJson(data));
       } else {
@@ -209,14 +215,16 @@ class ApiService {
       // Campo obrigatório: InteractionContent
       final interactionData = {
         'InteractionType': interaction.type,
-        'InteractionContent': interaction.notes ?? 'Interação registrada via app',
-        'InteractionDate': (interaction.date ?? DateTime.now()).toIso8601String(),
+        'InteractionContent':
+            interaction.notes ?? 'Interação registrada via app',
+        'InteractionDate': (interaction.date ?? DateTime.now())
+            .toIso8601String(),
       };
-      
+
       print('🔄 Registrando interação para lead: $leadId');
       print('📤 URL: $_baseUrl/Lead/$leadId/interact');
       print('📤 Dados: $interactionData');
-      
+
       final response = await http.post(
         Uri.parse('$_baseUrl/Lead/$leadId/interact'),
         headers: _headers,
@@ -228,25 +236,34 @@ class ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ Interação registrada com sucesso!');
-        
+
         // Tenta parsear a resposta como Lead (pode vir com dados atualizados da IA)
         if (response.body.isNotEmpty) {
           try {
             final data = json.decode(response.body);
             print('📊 Dados retornados pela API:');
-            print('   - currentScore: ${data['currentScore'] ?? data['CurrentScore']}');
-            print('   - probabilityOfClosing: ${data['probabilityOfClosing'] ?? data['ProbabilityOfClosing']}');
-            print('   - interactionsCount: ${data['interactionsCount'] ?? data['InteractionsCount']}');
-            
+            print(
+              '   - currentScore: ${data['currentScore'] ?? data['CurrentScore']}',
+            );
+            print(
+              '   - probabilityOfClosing: ${data['probabilityOfClosing'] ?? data['ProbabilityOfClosing']}',
+            );
+            print(
+              '   - interactionsCount: ${data['interactionsCount'] ?? data['InteractionsCount']}',
+            );
+
             // Se veio um objeto com dados de lead, retorna o lead atualizado
-            if (data is Map<String, dynamic> && (data.containsKey('leadId') || data.containsKey('LeadId') || data.containsKey('id'))) {
+            if (data is Map<String, dynamic> &&
+                (data.containsKey('leadId') ||
+                    data.containsKey('LeadId') ||
+                    data.containsKey('id'))) {
               return ApiResponse.success(LeadDto.fromJson(data));
             }
           } catch (e) {
             print('⚠️ Não foi possível parsear resposta como Lead: $e');
           }
         }
-        
+
         return ApiResponse.success(null);
       } else {
         print('❌ Erro: ${response.statusCode} - ${response.body}');
@@ -482,6 +499,7 @@ class LeadDto {
   final String? sellerName;
   final String? sellerId;
   final int? currentScore;
+  final int? leadScore;
   final double? probabilityOfClosing;
   final String? priority;
   final String? nextStepSuggestion;
@@ -505,6 +523,7 @@ class LeadDto {
     this.sellerName,
     this.sellerId,
     this.currentScore,
+    this.leadScore,
     this.probabilityOfClosing,
     this.priority,
     this.nextStepSuggestion,
@@ -666,6 +685,12 @@ class LeadDto {
       sellerName: json['sellerName'] ?? json['SellerName'],
       sellerId: json['sellerId'] ?? json['SellerId'],
       currentScore: _parseInt(json['currentScore'] ?? json['CurrentScore']),
+      leadScore: _parseInt(
+        json['leadScore'] ??
+            json['LeadScore'] ??
+            json['currentScore'] ??
+            json['CurrentScore'],
+      ),
       probabilityOfClosing: _parseDouble(
         json['probabilityOfClosing'] ?? json['ProbabilityOfClosing'],
       ),
@@ -716,6 +741,7 @@ class LeadDto {
     'sellerName': sellerName,
     'sellerId': sellerId,
     'currentScore': currentScore,
+    'leadScore': leadScore,
     'probabilityOfClosing': probabilityOfClosing,
     'priority': priority,
     'nextStepSuggestion': nextStepSuggestion,

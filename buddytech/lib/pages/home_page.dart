@@ -68,15 +68,81 @@ class _HomePageState extends State<HomePage> {
     });
 
     try {
-      // Busca todos os leads da API
-      final response = await _apiService.getAllLeads();
+      // Busca leads do vendedor logado
+      final response = await _apiService.getLeadsBySeller();
 
       if (response.isSuccess) {
         final leads = response.data ?? [];
+
+        print('📋 _loadClients - Leads carregados: ${leads.length}');
+
         setState(() {
-          _clients = leads
-              .map((lead) => ClientModel.fromLeadDto(lead))
-              .toList();
+          _clients = leads.map((lead) {
+            final client = ClientModel.fromLeadDto(lead);
+
+            // Debug dos dados mapeados
+            print('📌 Lead: ${client.companyName}');
+            print('   Status: ${client.status}');
+            print('   Prioridade: ${client.priority}');
+            print('   Última interação: ${client.lastInteraction}');
+            print('   LeadScore: ${client.leadScore}');
+            print('   Rank (antes): ${client.rank}');
+
+            return client;
+          }).toList();
+
+          // Ordena por leadScore (maior primeiro) para calcular ranking por ordem
+          _clients.sort((a, b) {
+            final scoreA = a.leadScore ?? 0;
+            final scoreB = b.leadScore ?? 0;
+            return scoreB.compareTo(
+              scoreA,
+            ); // Descendente: maior score primeiro
+          });
+
+          // Atribui ranking sequencial: 1º maior score = rank 1, 2º = rank 2, etc
+          for (int i = 0; i < _clients.length; i++) {
+            final assignedRank = i + 1; // Rank começa em 1
+
+            // Atualiza o rank do cliente
+            _clients[i] = ClientModel(
+              id: _clients[i].id,
+              rank: assignedRank,
+              companyName: _clients[i].companyName,
+              companyEmail: _clients[i].companyEmail,
+              contactName: _clients[i].contactName,
+              contactPhone: _clients[i].contactPhone,
+              status: _clients[i].status,
+              lastInteraction: _clients[i].lastInteraction,
+              logoUrl: _clients[i].logoUrl,
+              logoColorHex: _clients[i].logoColorHex,
+              logoIconName: _clients[i].logoIconName,
+              aiSummary: _clients[i].aiSummary,
+              recommendedActions: _clients[i].recommendedActions,
+              suggestedEmail: _clients[i].suggestedEmail,
+              meetingScript: _clients[i].meetingScript,
+              metrics: _clients[i].metrics,
+              title: _clients[i].title,
+              description: _clients[i].description,
+              leadSource: _clients[i].leadSource,
+              priority: _clients[i].priority,
+              currentScore: _clients[i].currentScore,
+              leadScore: _clients[i].leadScore,
+              probabilityOfClosing: _clients[i].probabilityOfClosing,
+              nextStepSuggestion: _clients[i].nextStepSuggestion,
+              suggestedContactType: _clients[i].suggestedContactType,
+              interactionsCount: _clients[i].interactionsCount,
+              expectedCloseDate: _clients[i].expectedCloseDate,
+              companyCNPJ: _clients[i].companyCNPJ,
+              companyLocation: _clients[i].companyLocation,
+              industry: _clients[i].industry,
+            );
+
+            print(
+              '   ${_clients[i].companyName} - Score: ${_clients[i].leadScore} → Rank: $assignedRank',
+            );
+          }
+
           _isLoading = false;
         });
       } else {
@@ -86,6 +152,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
     } catch (e) {
+      print('❌ Erro ao carregar clientes: $e');
       setState(() {
         _error = 'Erro ao carregar clientes: $e';
         _isLoading = false;
