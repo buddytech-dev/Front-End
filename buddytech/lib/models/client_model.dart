@@ -21,19 +21,20 @@ class ClientModel {
   final String? suggestedEmail;
   final String? meetingScript;
   final ClientMetrics? metrics;
-  
+
   // Campos extras da Lead
   final String? title;
   final String? description;
   final String? leadSource;
   final String? priority;
   final int? currentScore;
+  final int? leadScore;
   final double? probabilityOfClosing;
   final String? nextStepSuggestion;
   final String? suggestedContactType;
   final int? interactionsCount;
   final DateTime? expectedCloseDate;
-  
+
   // Dados da empresa
   final String? companyCNPJ;
   final String? companyLocation;
@@ -61,6 +62,7 @@ class ClientModel {
     this.leadSource,
     this.priority,
     this.currentScore,
+    this.leadScore,
     this.probabilityOfClosing,
     this.nextStepSuggestion,
     this.suggestedContactType,
@@ -132,7 +134,8 @@ class ClientModel {
       contactName: json['contact_name'] ?? json['contactName'] ?? '',
       contactPhone: json['contact_phone'] ?? json['contactPhone'] ?? '',
       status: json['status'] ?? '',
-      lastInteraction: json['last_interaction'] ?? json['lastInteraction'] ?? '',
+      lastInteraction:
+          json['last_interaction'] ?? json['lastInteraction'] ?? '',
       logoUrl: json['logo_url'] ?? json['logoUrl'] ?? '',
       logoColorHex: json['logo_color'] ?? json['logoColorHex'] ?? '3B82F6',
       logoIconName: json['logo_icon'] ?? json['logoIconName'] ?? 'business',
@@ -155,37 +158,38 @@ class ClientModel {
     final colors = ['3B82F6', 'EF4444', '10B981', 'F59E0B', '8B5CF6', 'EC4899'];
     final displayName = lead.displayName;
     final colorIndex = displayName.length % colors.length;
-    
+
     // Gera ícone baseado no status
     String iconName = 'business';
     final statusLower = lead.status?.toLowerCase() ?? '';
-    if (statusLower == 'negotiation' || statusLower == 'closed' || statusLower == 'won') {
+    if (statusLower == 'negotiation' ||
+        statusLower == 'closed' ||
+        statusLower == 'won') {
       iconName = 'local_fire_department';
     } else if (statusLower == 'new') {
       iconName = 'fiber_new';
     }
 
-    // Formata a última interação baseado na contagem de interações
+    // Formata a última interação baseado na contagem de interações ou data esperada
     String lastInteractionStr = 'Sem interações';
     if (lead.interactionsCount != null && lead.interactionsCount! > 0) {
       lastInteractionStr = '${lead.interactionsCount} interações';
-    }
-
-    // Calcula rank baseado na prioridade
-    int calculatedRank = 1;
-    if (lead.priority != null) {
-      switch (lead.priority!.toLowerCase()) {
-        case 'low': calculatedRank = 1; break;
-        case 'medium': calculatedRank = 2; break;
-        case 'high': calculatedRank = 3; break;
-        case 'urgent': calculatedRank = 4; break;
-        default: calculatedRank = 1;
+    } else if (lead.expectedCloseDate != null) {
+      // Formata a data esperada de fechamento
+      final now = DateTime.now();
+      final daysRemaining = lead.expectedCloseDate!.difference(now).inDays;
+      if (daysRemaining > 0) {
+        lastInteractionStr = 'Fecha em $daysRemaining dias';
+      } else if (daysRemaining == 0) {
+        lastInteractionStr = 'Vence hoje';
+      } else {
+        lastInteractionStr = 'Vencido há ${-daysRemaining} dias';
       }
     }
-    // Usa currentScore se disponível
-    if (lead.currentScore != null && lead.currentScore! > 0) {
-      calculatedRank = (lead.currentScore! / 20).clamp(1, 5).toInt();
-    }
+
+    // Rank será calculado no home_page baseado em percentuais da quantidade de leads
+    // Por enquanto, usa um valor padrão
+    int calculatedRank = 1;
 
     return ClientModel(
       id: lead.id,
@@ -199,9 +203,12 @@ class ClientModel {
       logoColorHex: colors[colorIndex],
       logoIconName: iconName,
       logoUrl: lead.logoUrl ?? '',
-      aiSummary: lead.nextStepSuggestion ?? lead.description ?? 'Análise de IA ainda não disponível para este lead.',
-      recommendedActions: lead.suggestedContactType != null 
-          ? [lead.suggestedContactType!, 'Agendar reunião'] 
+      aiSummary:
+          lead.nextStepSuggestion ??
+          lead.description ??
+          'Análise de IA ainda não disponível para este lead.',
+      recommendedActions: lead.suggestedContactType != null
+          ? [lead.suggestedContactType!, 'Agendar reunião']
           : ['Fazer primeiro contato', 'Agendar reunião'],
       // Campos extras da lead
       title: lead.title,
@@ -209,6 +216,7 @@ class ClientModel {
       leadSource: lead.leadSource,
       priority: lead.priorityText,
       currentScore: lead.currentScore,
+      leadScore: lead.leadScore,
       probabilityOfClosing: lead.probabilityOfClosing,
       nextStepSuggestion: lead.nextStepSuggestion,
       suggestedContactType: lead.suggestedContactType,
@@ -264,12 +272,15 @@ class ClientMetrics {
 
   factory ClientMetrics.fromJson(Map<String, dynamic> json) {
     return ClientMetrics(
-      conversionProbability: (json['conversion_probability'] ?? json['conversionProbability'])?.toDouble(),
+      conversionProbability:
+          (json['conversion_probability'] ?? json['conversionProbability'])
+              ?.toDouble(),
       interactionCount: json['interaction_count'] ?? json['interactionCount'],
       dealValue: (json['deal_value'] ?? json['dealValue'])?.toDouble(),
       stage: json['stage'],
       daysInPipeline: json['days_in_pipeline'] ?? json['daysInPipeline'],
-      engagementScore: (json['engagement_score'] ?? json['engagementScore'])?.toDouble(),
+      engagementScore: (json['engagement_score'] ?? json['engagementScore'])
+          ?.toDouble(),
     );
   }
 

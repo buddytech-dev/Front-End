@@ -9,7 +9,8 @@ import '../utils/responsive.dart';
 /// Página de Perfil do Usuário.
 /// Permite visualizar e editar informações pessoais, como foto e nome.
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final bool embedded;
+  const ProfilePage({super.key, this.embedded = false});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -17,7 +18,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final SupabaseClient _supabase = Supabase.instance.client;
-  
+
   String _userName = 'Nome do Usuário';
   String _userRole = 'Vendedor';
   String? _profileImageUrl;
@@ -33,7 +34,7 @@ class _ProfilePageState extends State<ProfilePage> {
   /// Carrega os dados do perfil do usuário atual do Supabase.
   Future<void> _loadUserProfile() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final user = _supabase.auth.currentUser;
       if (user != null) {
@@ -43,7 +44,7 @@ class _ProfilePageState extends State<ProfilePage> {
         //     .select()
         //     .eq('id', user.id)
         //     .single();
-        // 
+        //
         // setState(() {
         //   _userName = response['name'] ?? 'Nome do Usuário';
         //   _userRole = response['role'] ?? 'Vendedor';
@@ -52,9 +53,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Por enquanto usa dados do auth
         setState(() {
-          _userName = user.userMetadata?['name'] ?? 
-                      user.email?.split('@').first ?? 
-                      'Nome do Usuário';
+          _userName =
+              user.userMetadata?['name'] ??
+              user.email?.split('@').first ??
+              'Nome do Usuário';
           _userRole = user.userMetadata?['role'] ?? 'Vendedor';
           _profileImageUrl = user.userMetadata?['avatar_url'];
         });
@@ -87,16 +89,16 @@ class _ProfilePageState extends State<ProfilePage> {
         //   await _supabase.storage
         //       .from('avatars')
         //       .uploadBinary(fileName, _profileImageBytes!);
-        //   
+        //
         //   final imageUrl = _supabase.storage
         //       .from('avatars')
         //       .getPublicUrl(fileName);
-        //   
+        //
         //   await _supabase
         //       .from('profiles')
         //       .update({'avatar_url': imageUrl})
         //       .eq('id', user.id);
-        //   
+        //
         //   setState(() => _profileImageUrl = imageUrl);
         // }
 
@@ -122,18 +124,25 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _logout() async {
     await _supabase.auth.signOut();
-    
+
     if (!mounted) return;
-    
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.login,
-      (_) => false,
-    );
+
+    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (_) => false);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            Expanded(child: SingleChildScrollView(child: _buildContent())),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
@@ -142,11 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
           _buildHeader(),
 
           // Conteúdo principal
-          Expanded(
-            child: SingleChildScrollView(
-              child: _buildContent(),
-            ),
-          ),
+          Expanded(child: SingleChildScrollView(child: _buildContent())),
         ],
       ),
     );
@@ -154,27 +159,45 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
-        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+        horizontal: Responsive.value(
+          context,
+          mobile: 16,
+          tablet: 24,
+          desktop: 40,
+        ),
+        vertical: Responsive.value(
+          context,
+          mobile: 12,
+          tablet: 16,
+          desktop: 20,
+        ),
       ),
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
             IconButton(
               icon: Icon(
-                Icons.arrow_back, 
-                color: Colors.white, 
+                Icons.arrow_back,
+                color: Colors.white,
                 size: isMobile ? 24 : 28,
               ),
               onPressed: () => Navigator.pop(context),
             ),
+            SizedBox(width: isMobile ? 8 : 16),
+            // Logo - apenas desktop
+            if (!isMobile)
+              Image.asset(
+                'assets/logo.png',
+                height: 32,
+                width: 32,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.business, color: Colors.white, size: 32),
+              ),
             SizedBox(width: isMobile ? 8 : 16),
             Text(
               'Perfil',
@@ -185,15 +208,36 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const Spacer(),
-            // Indicador online
-            Container(
-              width: isMobile ? 10 : 12,
-              height: isMobile ? 10 : 12,
-              decoration: const BoxDecoration(
-                color: Colors.greenAccent,
-                shape: BoxShape.circle,
+            // nav.png - mobile, Foto de perfil - desktop
+            if (isMobile)
+              Image.asset(
+                'assets/nav.png',
+                height: 32,
+                width: 32,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.business, color: Colors.white, size: 32),
+              )
+            else
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: ClipOval(
+                  child: _profileImageBytes != null
+                      ? Image.memory(_profileImageBytes!, fit: BoxFit.cover)
+                      : _profileImageUrl != null
+                      ? Image.network(
+                          _profileImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultAvatarWhite(),
+                        )
+                      : _buildDefaultAvatarWhite(),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -203,129 +247,138 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildContent() {
     final isMobile = Responsive.isMobile(context);
     final isDesktop = Responsive.isDesktop(context);
-    final imageSize = Responsive.value<double>(context, mobile: 120, tablet: 140, desktop: 150);
-    
+    final imageSize = Responsive.value<double>(
+      context,
+      mobile: 120,
+      tablet: 140,
+      desktop: 150,
+    );
+
     return Center(
       child: Container(
-        constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+        constraints: BoxConstraints(
+          maxWidth: Responsive.maxContentWidth(context),
+        ),
         padding: EdgeInsets.all(Responsive.padding(context)),
-        child: Column(
-          children: [
-            SizedBox(height: isMobile ? 12 : 20),
-
-            // Foto de perfil
-            _buildProfileImage(imageSize),
-
-            SizedBox(height: isMobile ? 16 : 24),
-
-            // Nome e cargo
-            Text(
-              _userName,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 28),
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+        child: isDesktop
+            ? Row(
+                children: [
+                  // Coluna esquerda - Foto e info
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(height: isMobile ? 12 : 20),
+                        _buildProfileImage(imageSize),
+                        SizedBox(height: isMobile ? 16 : 24),
+                        Text(
+                          _userName,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 28),
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _userRole,
+                          style: TextStyle(
+                            fontSize: Responsive.fontSize(context, base: 16),
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                  // Coluna direita - Ações
+                  Expanded(
+                    flex: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildActionButton(
+                          'Estatísticas',
+                          Icons.bar_chart,
+                          onTap: _showStatistics,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          'Leads Atendidos',
+                          Icons.people,
+                          onTap: _showAttendedLeads,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          'Taxa de conversão',
+                          Icons.trending_up,
+                          onTap: _showConversionRate,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          'Configurações',
+                          Icons.settings,
+                          onTap: _showSettings,
+                        ),
+                        const SizedBox(height: 24),
+                        SizedBox(child: _buildLogoutButton()),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                children: [
+                  SizedBox(height: isMobile ? 12 : 20),
+                  _buildProfileImage(imageSize),
+                  SizedBox(height: isMobile ? 16 : 24),
+                  Text(
+                    _userName,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, base: 28),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _userRole,
+                    style: TextStyle(
+                      fontSize: Responsive.fontSize(context, base: 16),
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  SizedBox(height: isMobile ? 32 : 48),
+                  _buildMobileActions(),
+                ],
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _userRole,
-              style: TextStyle(
-                fontSize: Responsive.fontSize(context, base: 16),
-                color: Colors.grey.shade600,
-              ),
-            ),
-
-            SizedBox(height: isMobile ? 32 : 48),
-
-            // Botões de ação - Grid em desktop, lista em mobile
-            if (isDesktop)
-              _buildDesktopActions()
-            else
-              _buildMobileActions(),
-          ],
-        ),
       ),
-    );
-  }
-
-  Widget _buildDesktopActions() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Estatísticas',
-                Icons.bar_chart,
-                onTap: () => _showComingSoon('Estatísticas'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionButton(
-                'Leads Atendidos',
-                Icons.people_outline,
-                onTap: () => _showComingSoon('Leads Atendidos'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Taxa de conversão',
-                Icons.trending_up,
-                onTap: () => _showComingSoon('Taxa de conversão'),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildActionButton(
-                'Configurações',
-                Icons.settings_outlined,
-                onTap: () => _showComingSoon('Configurações'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: 300,
-          child: _buildLogoutButton(),
-        ),
-      ],
     );
   }
 
   Widget _buildMobileActions() {
     return Column(
       children: [
-        _buildActionButton(
-          'Estatísticas',
-          Icons.bar_chart,
-          onTap: () => _showComingSoon('Estatísticas'),
-        ),
-        const SizedBox(height: 12),
-        _buildActionButton(
-          'Leads Atendidos',
-          Icons.people_outline,
-          onTap: () => _showComingSoon('Leads Atendidos'),
-        ),
-        const SizedBox(height: 12),
-        _buildActionButton(
-          'Taxa de conversão',
+        _buildStatCard(
+          'Total de Vendas',
+          'R\$ 12.500,00',
+          Colors.green,
           Icons.trending_up,
-          onTap: () => _showComingSoon('Taxa de conversão'),
         ),
         const SizedBox(height: 12),
-        _buildActionButton(
-          'Configurações',
-          Icons.settings_outlined,
-          onTap: () => _showComingSoon('Configurações'),
+        _buildStatCard('Taxa de Conversão', '45%', Colors.blue, Icons.percent),
+        const SizedBox(height: 12),
+        _buildStatCard('Leads Atendidos', '89', Colors.orange, Icons.people),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          'Ticket Médio',
+          'R\$ 278,00',
+          Colors.purple,
+          Icons.attach_money,
         ),
         const SizedBox(height: 20),
         _buildLogoutButton(),
@@ -333,9 +386,62 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildStatCard(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProfileImage(double size) {
     final buttonSize = size * 0.3;
-    
+
     return Stack(
       children: [
         Container(
@@ -343,10 +449,7 @@ class _ProfilePageState extends State<ProfilePage> {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFF3B82F6),
-              width: 3,
-            ),
+            border: Border.all(color: const Color(0xFF3B82F6), width: 3),
           ),
           child: ClipOval(
             child: _profileImageBytes != null
@@ -357,14 +460,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     height: size,
                   )
                 : _profileImageUrl != null
-                    ? Image.network(
-                        _profileImageUrl!,
-                        fit: BoxFit.cover,
-                        width: size,
-                        height: size,
-                        errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
-                      )
-                    : _buildDefaultAvatar(size),
+                ? Image.network(
+                    _profileImageUrl!,
+                    fit: BoxFit.cover,
+                    width: size,
+                    height: size,
+                    errorBuilder: (_, __, ___) => _buildDefaultAvatar(size),
+                  )
+                : _buildDefaultAvatar(size),
           ),
         ),
         // Botão de editar foto
@@ -399,9 +502,7 @@ class _ProfilePageState extends State<ProfilePage> {
               shape: BoxShape.circle,
             ),
             child: const Center(
-              child: CircularProgressIndicator(
-                color: Colors.white,
-              ),
+              child: CircularProgressIndicator(color: Colors.white),
             ),
           ),
       ],
@@ -421,9 +522,20 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildActionButton(String text, IconData icon, {required VoidCallback onTap}) {
+  Widget _buildDefaultAvatarWhite() {
+    return Container(
+      color: Colors.grey.shade300,
+      child: const Icon(Icons.person_outline, size: 20, color: Colors.white),
+    );
+  }
+
+  Widget _buildActionButton(
+    String text,
+    IconData icon, {
+    required VoidCallback onTap,
+  }) {
     final isMobile = Responsive.isMobile(context);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -443,7 +555,11 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: const Color(0xFF3B82F6), size: isMobile ? 20 : 22),
+              Icon(
+                icon,
+                color: const Color(0xFF3B82F6),
+                size: isMobile ? 20 : 22,
+              ),
               SizedBox(width: isMobile ? 8 : 12),
               Text(
                 text,
@@ -462,7 +578,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildLogoutButton() {
     final isMobile = Responsive.isMobile(context);
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -482,7 +598,11 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.logout, color: Colors.red.shade400, size: isMobile ? 20 : 22),
+              Icon(
+                Icons.logout,
+                color: Colors.red.shade400,
+                size: isMobile ? 20 : 22,
+              ),
               SizedBox(width: isMobile ? 8 : 12),
               Text(
                 'Sair',
@@ -499,11 +619,354 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature - Em breve!'),
-        duration: const Duration(seconds: 2),
+  void _showStatistics() {
+    _showModalSheet(
+      title: 'Estatísticas',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatCard(
+                'Total de vendas',
+                'R\$ 12.500,00',
+                Colors.green,
+                Icons.trending_up,
+              ),
+              const SizedBox(height: 16),
+              _buildStatCard('Conversões', '45%', Colors.blue, Icons.percent),
+              const SizedBox(height: 16),
+              _buildStatCard(
+                'Ticket médio',
+                'R\$ 278,00',
+                Colors.orange,
+                Icons.attach_money,
+              ),
+              const SizedBox(height: 16),
+              _buildStatCard(
+                'Clientes ativos',
+                '89',
+                Colors.purple,
+                Icons.people,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAttendedLeads() {
+    _showModalSheet(
+      title: 'Leads Atendidos',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              _buildLeadItem(
+                'João Silva',
+                'Contato realizado em 15/12/2024',
+                Icons.check_circle,
+                Colors.green,
+              ),
+              const SizedBox(height: 12),
+              _buildLeadItem(
+                'Maria Santos',
+                'Aguardando resposta',
+                Icons.schedule,
+                Colors.orange,
+              ),
+              const SizedBox(height: 12),
+              _buildLeadItem(
+                'Pedro Costa',
+                'Contactado em 14/12/2024',
+                Icons.check_circle,
+                Colors.green,
+              ),
+              const SizedBox(height: 12),
+              _buildLeadItem(
+                'Ana Lima',
+                'Novo lead',
+                Icons.fiber_new,
+                Colors.blue,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showConversionRate() {
+    _showModalSheet(
+      title: 'Taxa de Conversão',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildConversionStat('Este mês', '45%', Colors.green),
+              const SizedBox(height: 16),
+              _buildConversionStat('Mês anterior', '38%', Colors.blue),
+              const SizedBox(height: 16),
+              _buildConversionStat('Média geral', '42%', Colors.grey),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.trending_up, color: Colors.green),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Você está 7% acima da média!',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSettings() {
+    _showModalSheet(
+      title: 'Configurações',
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSettingItem('Notificações', Icons.notifications_outlined),
+              const Divider(height: 24),
+              _buildSettingItem('Privacidade', Icons.lock_outlined),
+              const Divider(height: 24),
+              _buildSettingItem(
+                'Preferências de exibição',
+                Icons.display_settings,
+              ),
+              const Divider(height: 24),
+              _buildSettingItem('Segurança da conta', Icons.security),
+              const Divider(height: 24),
+              _buildSettingItem('Sobre', Icons.info_outlined),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showModalSheet({required String title, required Widget child}) {
+    final isDesktop = Responsive.isDesktop(context);
+
+    if (isDesktop) {
+      // Pop-up dialog centralizado para desktop
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.5,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(child: SingleChildScrollView(child: child)),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else {
+      // Bottom sheet para mobile/tablet
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(child: child),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildLeadItem(
+    String name,
+    String status,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConversionStat(String period, String rate, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            period,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              rate,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.grey.shade600),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        ],
       ),
     );
   }

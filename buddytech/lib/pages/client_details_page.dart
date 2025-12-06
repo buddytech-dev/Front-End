@@ -79,7 +79,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   bool _isLoadingScript = false;
   bool _isLoadingInteraction = false;
   bool _isRefreshing = false;
-  bool _interactionInProgress = false; // Flag extra para prevenir chamadas duplicadas
+  bool _interactionInProgress =
+      false; // Flag extra para prevenir chamadas duplicadas
 
   // Estados mutáveis para dados da IA (podem ser atualizados após interação)
   late int? _currentScore;
@@ -110,16 +111,16 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
     try {
       final response = await _apiService.getLeadById(widget.leadId);
-      
+
       print('📡 Response isSuccess: ${response.isSuccess}');
       print('📡 Response data: ${response.data}');
-      
+
       if (response.isSuccess && response.data != null) {
         final lead = response.data!;
         print('📊 Antes do setState:');
         print('   _currentScore: $_currentScore');
         print('   _interactionsCount: $_interactionsCount');
-        
+
         setState(() {
           _currentScore = lead.currentScore;
           _probabilityOfClosing = lead.probabilityOfClosing;
@@ -127,9 +128,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           _nextStepSuggestion = lead.nextStepSuggestion;
           _suggestedContactType = lead.suggestedContactType;
           _interactionsCount = lead.interactionsCount;
-          _aiSummary = lead.nextStepSuggestion ?? lead.description ?? widget.aiSummary;
+          _aiSummary =
+              lead.nextStepSuggestion ?? lead.description ?? widget.aiSummary;
         });
-        
+
         print('📊 Depois do setState:');
         print('   _currentScore: $_currentScore');
         print('   _interactionsCount: $_interactionsCount');
@@ -149,9 +151,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   @override
   Widget build(BuildContext context) {
     print('🏗️ BUILD: score=$_currentScore, interações=$_interactionsCount');
-    
+
     return Scaffold(
-      key: ValueKey('details_${_currentScore}_${_interactionsCount}_${_probabilityOfClosing}'),
+      key: ValueKey(
+        'details_${_currentScore}_${_interactionsCount}_${_probabilityOfClosing}',
+      ),
       backgroundColor: Colors.white,
       body: Column(
         children: [
@@ -227,7 +231,14 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
         constraints: BoxConstraints(
           maxWidth: Responsive.maxContentWidth(context),
         ),
-        padding: EdgeInsets.all(contentPadding),
+        padding: EdgeInsets.only(
+          left: contentPadding,
+          right: contentPadding,
+          top: contentPadding,
+          bottom: isMobile
+              ? 120
+              : contentPadding, // Extra padding on mobile for nav bar
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -458,8 +469,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   /// Constrói o card de métricas do lead (Score, Probabilidade, Prioridade).
   /// Exibe indicadores visuais coloridos para facilitar a análise rápida.
   Widget _buildLeadMetricsCard() {
-    print('🎨 Rebuild _buildLeadMetricsCard: score=$_currentScore, interações=$_interactionsCount');
-    
+    print(
+      '🎨 Rebuild _buildLeadMetricsCard: score=$_currentScore, interações=$_interactionsCount',
+    );
+
     final isMobile = Responsive.isMobile(context);
     final cardPadding = isMobile ? 16.0 : 24.0;
 
@@ -514,55 +527,79 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ),
           SizedBox(height: isMobile ? 16 : 20),
 
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              // Score (usa variável de estado)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final metricsItems = <Widget>[];
+
               if (_currentScore != null)
-                _buildMetricItem(
-                  icon: Icons.score,
-                  label: 'Score',
-                  value: _currentScore.toString(),
-                  color: Colors.blue,
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.score,
+                    label: 'Score',
+                    value: _currentScore.toString(),
+                    color: Colors.blue,
+                  ),
+                );
 
-              // Probabilidade (usa variável de estado)
               if (_probabilityOfClosing != null)
-                _buildMetricItem(
-                  icon: Icons.trending_up,
-                  label: 'Probabilidade',
-                  value: '${(_probabilityOfClosing! * 100).toInt()}%',
-                  color: _getProbabilityColor(_probabilityOfClosing!),
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.trending_up,
+                    label: 'Probabilidade',
+                    value: '${(_probabilityOfClosing! * 100).toInt()}%',
+                    color: _getProbabilityColor(_probabilityOfClosing!),
+                  ),
+                );
 
-              // Prioridade (usa variável de estado)
               if (_priority != null)
-                _buildMetricItem(
-                  icon: Icons.flag,
-                  label: 'Prioridade',
-                  value: _priority!,
-                  color: _getPriorityColor(_priority!),
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.flag,
+                    label: 'Prioridade',
+                    value: _priority!,
+                    color: _getPriorityColor(_priority!),
+                  ),
+                );
 
-              // Fonte
               if (widget.leadSource != null && widget.leadSource!.isNotEmpty)
-                _buildMetricItem(
-                  icon: Icons.source,
-                  label: 'Fonte',
-                  value: widget.leadSource!,
-                  color: Colors.purple,
-                ),
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.source,
+                    label: 'Fonte',
+                    value: widget.leadSource!,
+                    color: Colors.purple,
+                  ),
+                );
 
-              // Interações (usa variável de estado)
               if (_interactionsCount != null)
-                _buildMetricItem(
-                  icon: Icons.chat,
-                  label: 'Interações',
-                  value: _interactionsCount.toString(),
-                  color: Colors.teal,
-                ),
-            ],
+                metricsItems.add(
+                  _buildMetricItem(
+                    icon: Icons.chat,
+                    label: 'Interações',
+                    value: _interactionsCount.toString(),
+                    color: Colors.teal,
+                  ),
+                );
+
+              // Número de colunas baseado na largura disponível
+              final itemWidth = isMobile ? 140 : 160;
+              final spacing = 16.0;
+              final availableWidth = constraints.maxWidth;
+              final colsCount =
+                  ((availableWidth + spacing) / (itemWidth + spacing))
+                      .floor()
+                      .clamp(1, 5);
+
+              return GridView.count(
+                crossAxisCount: colsCount,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                childAspectRatio: (itemWidth) / (isMobile ? 80 : 90),
+                children: metricsItems,
+              );
+            },
           ),
         ],
       ),
@@ -576,39 +613,50 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     required String value,
     required Color color,
   }) {
+    final isMobile = Responsive.isMobile(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      constraints: BoxConstraints(
+        minHeight: isMobile ? 80 : 90,
+        minWidth: isMobile ? 140 : 160,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: color,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: color,
-                  fontWeight: FontWeight.bold,
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: color,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1212,7 +1260,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.2)),
+              border: Border.all(
+                color: const Color(0xFF8B5CF6).withOpacity(0.2),
+              ),
             ),
             child: Stack(
               children: [
@@ -1269,7 +1319,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                             style: TextStyle(
                               fontSize: Responsive.fontSize(context, base: 32),
                               fontWeight: FontWeight.bold,
-                              color: _getProbabilityColor(_probabilityOfClosing ?? 0),
+                              color: _getProbabilityColor(
+                                _probabilityOfClosing ?? 0,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1293,7 +1345,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                       child: Column(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: _getPriorityColor(_priority ?? 'Normal'),
                               borderRadius: BorderRadius.circular(20),
@@ -1301,7 +1356,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                             child: Text(
                               _priority ?? 'Normal',
                               style: TextStyle(
-                                fontSize: Responsive.fontSize(context, base: 12),
+                                fontSize: Responsive.fontSize(
+                                  context,
+                                  base: 12,
+                                ),
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -1327,7 +1385,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           SizedBox(height: isMobile ? 16 : 20),
 
           // Próximo Passo Sugerido pela IA
-          if (_nextStepSuggestion != null && _nextStepSuggestion!.isNotEmpty) ...[
+          if (_nextStepSuggestion != null &&
+              _nextStepSuggestion!.isNotEmpty) ...[
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -1372,7 +1431,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ],
 
           // Se não tiver sugestão, mostra o aiSummary
-          if ((_nextStepSuggestion == null || _nextStepSuggestion!.isEmpty) && 
+          if ((_nextStepSuggestion == null || _nextStepSuggestion!.isEmpty) &&
               _aiSummary.isNotEmpty) ...[
             Container(
               width: double.infinity,
@@ -1408,7 +1467,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     final List<Map<String, dynamic>> actions = [];
 
     // Adiciona ação baseada na sugestão de tipo de contato
-    if (_suggestedContactType != null && 
+    if (_suggestedContactType != null &&
         _suggestedContactType!.isNotEmpty &&
         _suggestedContactType != 'N/A') {
       actions.add({
@@ -1422,11 +1481,15 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
     // Adiciona ação baseada na prioridade
     if (_priority != null) {
       final priorityLower = _priority!.toLowerCase();
-      if (priorityLower == 'high' || priorityLower == 'urgent' || priorityLower == 'alta' || priorityLower == 'urgente') {
+      if (priorityLower == 'high' ||
+          priorityLower == 'urgent' ||
+          priorityLower == 'alta' ||
+          priorityLower == 'urgente') {
         actions.add({
           'icon': Icons.priority_high,
           'title': 'Prioridade Alta',
-          'description': 'Este lead requer atenção imediata. Faça contato hoje.',
+          'description':
+              'Este lead requer atenção imediata. Faça contato hoje.',
           'color': Colors.red,
         });
       }
@@ -1463,7 +1526,8 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       actions.add({
         'icon': Icons.phone,
         'title': 'Fazer Primeiro Contato',
-        'description': 'Entre em contato para entender as necessidades do cliente.',
+        'description':
+            'Entre em contato para entender as necessidades do cliente.',
         'color': Colors.blue,
       });
       actions.add({
@@ -1516,12 +1580,16 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
             ],
           ),
           SizedBox(height: isMobile ? 16 : 20),
-          ...actions.map((action) => _buildActionCard(
-            icon: action['icon'],
-            title: action['title'],
-            description: action['description'],
-            color: action['color'],
-          )).toList(),
+          ...actions
+              .map(
+                (action) => _buildActionCard(
+                  icon: action['icon'],
+                  title: action['title'],
+                  description: action['description'],
+                  color: action['color'],
+                ),
+              )
+              .toList(),
         ],
       ),
     );
@@ -1787,6 +1855,339 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
   /// Exibe o diálogo para registrar uma interação
   void _showInteractionDialog(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+
+    if (isMobile) {
+      _showInteractionBottomSheet(context);
+    } else {
+      _showInteractionDialogDesktop(context);
+    }
+  }
+
+  void _showInteractionBottomSheet(BuildContext context) {
+    String selectedType = 'call';
+    final notesController = TextEditingController();
+    bool isSubmitting = false;
+
+    final interactionTypes = [
+      {'value': 'call', 'label': 'Ligação', 'icon': Icons.phone},
+      {'value': 'email', 'label': 'E-mail', 'icon': Icons.email},
+      {'value': 'meeting', 'label': 'Reunião', 'icon': Icons.event},
+      {'value': 'visit', 'label': 'Visita', 'icon': Icons.location_on},
+      {'value': 'proposal', 'label': 'Proposta', 'icon': Icons.description},
+      {'value': 'negotiation', 'label': 'Negociação', 'icon': Icons.handshake},
+      {'value': 'follow_up', 'label': 'Follow-up', 'icon': Icons.update},
+      {'value': 'demo', 'label': 'Demonstração', 'icon': Icons.play_circle},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setDialogState) => SafeArea(
+          bottom: false,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.add_task,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Registrar Interação',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        icon: const Icon(Icons.close),
+                      ),
+                    ],
+                  ),
+                ),
+                // Conteúdo
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tipo de Interação',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: interactionTypes.map((type) {
+                              final isSelected = selectedType == type['value'];
+                              return GestureDetector(
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedType = type['value'] as String;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? Colors.green.shade100
+                                        : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? Colors.green
+                                          : Colors.grey.shade300,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        type['icon'] as IconData,
+                                        size: 16,
+                                        color: isSelected
+                                            ? Colors.green.shade700
+                                            : Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        type['label'] as String,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isSelected
+                                              ? Colors.green.shade700
+                                              : Colors.grey.shade700,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            children: [
+                              Text(
+                                'Descrição da Interação',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                              const Text(
+                                ' *',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: notesController,
+                            maxLines: 4,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'Descreva o que foi conversado, resultado da interação...',
+                              hintStyle: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade500,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: Colors.green,
+                                  width: 2,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.all(12),
+                            ),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue.shade200),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.blue.shade700,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Ao registrar uma interação, a IA irá recalcular o score e as sugestões para este lead.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue.shade700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Botões
+                Container(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 8,
+                    bottom: 64 + MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.pop(sheetContext),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: isSubmitting
+                                ? null
+                                : () {
+                                    if (notesController.text.trim().isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Por favor, descreva a interação',
+                                          ),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (isSubmitting) return;
+                                    setDialogState(() => isSubmitting = true);
+
+                                    final typeToSend = selectedType;
+                                    final notesToSend = notesController.text;
+
+                                    Navigator.pop(sheetContext);
+
+                                    _registerInteraction(
+                                      typeToSend,
+                                      notesToSend,
+                                    );
+                                  },
+                            icon: isSubmitting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.check),
+                            label: Text(
+                              isSubmitting ? 'Enviando...' : 'Registrar',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showInteractionDialogDesktop(BuildContext context) {
     String selectedType = 'call';
     final notesController = TextEditingController();
     bool isSubmitting = false;
@@ -1902,7 +2303,13 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                         color: Colors.grey.shade700,
                       ),
                     ),
-                    const Text(' *', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    const Text(
+                      ' *',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -1910,13 +2317,17 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   controller: notesController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Descreva o que foi conversado, resultado da interação...',
+                    hintText:
+                        'Descreva o que foi conversado, resultado da interação...',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.green, width: 2),
+                      borderSide: const BorderSide(
+                        color: Colors.green,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -1930,7 +2341,11 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.blue.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -1949,40 +2364,43 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           ),
           actions: [
             TextButton(
-              onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+              onPressed: isSubmitting
+                  ? null
+                  : () => Navigator.pop(dialogContext),
               child: const Text('Cancelar'),
             ),
             ElevatedButton.icon(
-              onPressed: isSubmitting ? null : () {
-                if (notesController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Por favor, descreva a interação'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                  return;
-                }
-                
-                // Previne cliques duplos - desabilita o botão imediatamente
-                if (isSubmitting) return;
-                setDialogState(() => isSubmitting = true);
-                
-                // Captura os valores antes de fechar
-                final typeToSend = selectedType;
-                final notesToSend = notesController.text;
-                
-                // Fecha o dialog primeiro
-                Navigator.pop(dialogContext);
-                
-                // Depois registra a interação (sem await aqui)
-                _registerInteraction(typeToSend, notesToSend);
-              },
-              icon: isSubmitting 
+              onPressed: isSubmitting
+                  ? null
+                  : () {
+                      if (notesController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Por favor, descreva a interação'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (isSubmitting) return;
+                      setDialogState(() => isSubmitting = true);
+
+                      final typeToSend = selectedType;
+                      final notesToSend = notesController.text;
+
+                      Navigator.pop(dialogContext);
+
+                      _registerInteraction(typeToSend, notesToSend);
+                    },
+              icon: isSubmitting
                   ? const SizedBox(
-                      width: 16, 
-                      height: 16, 
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.check),
               label: Text(isSubmitting ? 'Enviando...' : 'Registrar'),
@@ -2001,14 +2419,18 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
   Future<void> _registerInteraction(String type, String notes) async {
     // Previne chamadas duplicadas com dupla verificação
     if (_isLoadingInteraction || _interactionInProgress) {
-      print('⚠️ _registerInteraction já está em execução, ignorando chamada duplicada');
-      print('   _isLoadingInteraction=$_isLoadingInteraction, _interactionInProgress=$_interactionInProgress');
+      print(
+        '⚠️ _registerInteraction já está em execução, ignorando chamada duplicada',
+      );
+      print(
+        '   _isLoadingInteraction=$_isLoadingInteraction, _interactionInProgress=$_interactionInProgress',
+      );
       return;
     }
-    
+
     // Marca como em progresso IMEDIATAMENTE (antes do setState)
     _interactionInProgress = true;
-    
+
     print('🚀 _registerInteraction chamado: type=$type');
     setState(() => _isLoadingInteraction = true);
 
@@ -2024,7 +2446,10 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
       );
 
       print('📤 Enviando interação para API...');
-      final response = await _apiService.addInteraction(widget.leadId, interaction);
+      final response = await _apiService.addInteraction(
+        widget.leadId,
+        interaction,
+      );
       print('📥 Resposta recebida: isSuccess=${response.isSuccess}');
 
       if (!mounted) return;
@@ -2037,7 +2462,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
           print('   Score: ${lead.currentScore}');
           print('   Probabilidade: ${lead.probabilityOfClosing}');
           print('   Interações: ${lead.interactionsCount}');
-          
+
           setState(() {
             _currentScore = lead.currentScore;
             _probabilityOfClosing = lead.probabilityOfClosing;
@@ -2049,7 +2474,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
               _aiSummary = lead.nextStepSuggestion!;
             }
           });
-          
+
           // Salva no histórico local
           await _saveToHistory(
             type: type,
@@ -2060,7 +2485,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
             probabilityAfter: lead.probabilityOfClosing,
             aiSuggestion: lead.nextStepSuggestion,
           );
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
@@ -2090,7 +2515,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
             probabilityAfter: _probabilityOfClosing,
             aiSuggestion: null,
           );
-          
+
           // Se não retornou, busca os dados atualizados
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -2099,7 +2524,9 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
                   const Icon(Icons.check_circle, color: Colors.white),
                   const SizedBox(width: 12),
                   const Expanded(
-                    child: Text('Interação registrada! Buscando dados atualizados...'),
+                    child: Text(
+                      'Interação registrada! Buscando dados atualizados...',
+                    ),
                   ),
                 ],
               ),
@@ -2111,7 +2538,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
 
           // Aguarda um pouco e depois atualiza os dados
           await Future.delayed(const Duration(seconds: 1));
-          
+
           if (mounted) {
             await _refreshLeadData();
           }
@@ -2167,7 +2594,7 @@ class _ClientDetailsPageState extends State<ClientDetailsPage> {
         probabilityAfter: probabilityAfter,
         aiSuggestion: aiSuggestion,
       );
-      
+
       await _historyService.saveInteraction(historyItem);
       print('💾 Interação salva no histórico!');
     } catch (e) {

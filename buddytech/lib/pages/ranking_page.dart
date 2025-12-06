@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../services/api_service.dart';
+import '../services/mission_service.dart';
 import '../utils/responsive.dart';
 
 /// Modelo para o ranking de vendedores.
@@ -32,7 +33,8 @@ class SellerRanking {
 /// Página de Ranking de Vendedores.
 /// Exibe a classificação dos vendedores baseada em pontos e desempenho.
 class RankingPage extends StatefulWidget {
-  const RankingPage({super.key});
+  final bool embedded;
+  const RankingPage({super.key, this.embedded = false});
 
   @override
   State<RankingPage> createState() => _RankingPageState();
@@ -40,6 +42,7 @@ class RankingPage extends StatefulWidget {
 
 class _RankingPageState extends State<RankingPage> {
   final ApiService _apiService = ApiService();
+  final MissionService _missionService = MissionService();
   List<SellerRanking> _rankings = [];
   bool _isLoading = true;
   String? _error;
@@ -65,7 +68,7 @@ class _RankingPageState extends State<RankingPage> {
 
       // Busca todos os vendedores
       final sellersResponse = await _apiService.getAllSellers();
-      
+
       if (!sellersResponse.isSuccess) {
         setState(() {
           _error = sellersResponse.error;
@@ -75,42 +78,58 @@ class _RankingPageState extends State<RankingPage> {
       }
 
       final sellers = sellersResponse.data ?? [];
-      
+
       // Busca todos os leads para calcular estatísticas
       final leadsResponse = await _apiService.getAllLeads();
       final allLeads = leadsResponse.data ?? [];
 
+      // Obtém pontos de missões do usuário atual
+      final missionPoints = await _missionService.getTotalPoints();
+
       // Calcula estatísticas por vendedor
       final List<SellerRanking> rankings = [];
-      
+
       for (final seller in sellers) {
         // Filtra leads deste vendedor
-        final sellerLeads = allLeads.where((l) => l.sellerId == seller.id).toList();
-        final leadsWon = sellerLeads.where((l) => 
-          l.status?.toLowerCase() == 'won' || 
-          l.status?.toLowerCase() == 'closed'
-        ).length;
-        
-        final conversionRate = sellerLeads.isNotEmpty 
-            ? (leadsWon / sellerLeads.length) * 100 
+        final sellerLeads = allLeads
+            .where((l) => l.sellerId == seller.id)
+            .toList();
+        final leadsWon = sellerLeads
+            .where(
+              (l) =>
+                  l.status?.toLowerCase() == 'won' ||
+                  l.status?.toLowerCase() == 'closed',
+            )
+            .length;
+
+        final conversionRate = sellerLeads.isNotEmpty
+            ? (leadsWon / sellerLeads.length) * 100
             : 0.0;
 
-        rankings.add(SellerRanking(
-          id: seller.id,
-          name: seller.name ?? 'Vendedor',
-          email: seller.email,
-          photoUrl: seller.photoUrl,
-          totalPoints: seller.currentPoints ?? 0,
-          leadsCount: sellerLeads.length,
-          leadsWon: leadsWon,
-          conversionRate: conversionRate,
-          rank: 0, // Será calculado depois
-        ));
+        // Se é o vendedor atual, adiciona os pontos das missões
+        int totalPoints = seller.currentPoints ?? 0;
+        if (seller.id == _currentUserId) {
+          totalPoints += missionPoints;
+        }
+
+        rankings.add(
+          SellerRanking(
+            id: seller.id,
+            name: seller.name ?? 'Vendedor',
+            email: seller.email,
+            photoUrl: seller.photoUrl,
+            totalPoints: totalPoints,
+            leadsCount: sellerLeads.length,
+            leadsWon: leadsWon,
+            conversionRate: conversionRate,
+            rank: 0, // Será calculado depois
+          ),
+        );
       }
 
       // Ordena por pontos (maior primeiro)
       rankings.sort((a, b) => b.totalPoints.compareTo(a.totalPoints));
-      
+
       // Atribui posições no ranking
       for (int i = 0; i < rankings.length; i++) {
         rankings[i] = SellerRanking(
@@ -140,6 +159,23 @@ class _RankingPageState extends State<RankingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.embedded) {
+      return Container(
+        color: Colors.grey.shade50,
+        child: Column(
+          children: [
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? _buildError()
+                  : _buildContent(),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       body: Column(
@@ -149,8 +185,8 @@ class _RankingPageState extends State<RankingPage> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? _buildError()
-                    : _buildContent(),
+                ? _buildError()
+                : _buildContent(),
           ),
         ],
       ),
@@ -162,12 +198,20 @@ class _RankingPageState extends State<RankingPage> {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: Responsive.value(context, mobile: 16, tablet: 24, desktop: 40),
-        vertical: Responsive.value(context, mobile: 12, tablet: 16, desktop: 20),
+        horizontal: Responsive.value(
+          context,
+          mobile: 16,
+          tablet: 24,
+          desktop: 40,
+        ),
+        vertical: Responsive.value(
+          context,
+          mobile: 12,
+          tablet: 16,
+          desktop: 20,
+        ),
       ),
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
       child: SafeArea(
         bottom: false,
         child: Row(
@@ -264,18 +308,28 @@ class _RankingPageState extends State<RankingPage> {
       return _buildEmptyState();
     }
 
+    final isMobile = Responsive.isMobile(context);
+
     return SingleChildScrollView(
       child: Center(
         child: Container(
-          constraints: BoxConstraints(maxWidth: Responsive.maxContentWidth(context)),
+          constraints: BoxConstraints(
+            maxWidth: Responsive.maxContentWidth(context),
+          ),
           padding: EdgeInsets.all(Responsive.padding(context)),
           child: Column(
             children: [
+              // Resumo rápido (apenas mobile)
+              if (isMobile && _rankings.isNotEmpty) ...[
+                _buildQuickStats(),
+                SizedBox(height: isMobile ? 20 : 24),
+              ],
+
               // Top 3 em destaque
               if (_rankings.length >= 3) _buildTopThree(),
-              
-              SizedBox(height: Responsive.isMobile(context) ? 16 : 24),
-              
+
+              SizedBox(height: isMobile ? 24 : 32),
+
               // Lista completa
               _buildRankingList(),
             ],
@@ -285,7 +339,100 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
-  /// Constrói o estado vazio (sem vendedores).
+  Widget _buildQuickStats() {
+    if (_rankings.isEmpty) return const SizedBox.shrink();
+
+    final currentUserRank = _rankings.cast<SellerRanking?>().firstWhere(
+      (r) => r?.id == _currentUserId,
+      orElse: () => null,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+        ),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Total de Vendedores',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${_rankings.length}',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          Container(width: 1, height: 50, color: Colors.white24),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Sua Posição',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                currentUserRank != null ? '${currentUserRank.rank}º' : '-',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          Container(width: 1, height: 50, color: Colors.white24),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Seus Pontos',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                currentUserRank != null
+                    ? '${currentUserRank.totalPoints}'
+                    : '-',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -316,10 +463,7 @@ class _RankingPageState extends State<RankingPage> {
           Text(
             'O ranking aparecerá quando houver vendedores cadastrados',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
           ),
         ],
       ),
@@ -334,23 +478,8 @@ class _RankingPageState extends State<RankingPage> {
     final top3 = _rankings.take(3).toList();
 
     if (isMobile) {
-      // Layout vertical para mobile
-      return Column(
-        children: [
-          if (top3.isNotEmpty) _buildPodiumItem(top3[0], 1, true),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              if (top3.length > 1)
-                Expanded(child: _buildPodiumItem(top3[1], 2, false)),
-              if (top3.length > 2) ...[
-                const SizedBox(width: 12),
-                Expanded(child: _buildPodiumItem(top3[2], 3, false)),
-              ],
-            ],
-          ),
-        ],
-      );
+      // Pódio estilo atletismo para mobile
+      return _buildPodiumAtletismo(top3);
     }
 
     // Layout horizontal para desktop
@@ -360,28 +489,395 @@ class _RankingPageState extends State<RankingPage> {
       children: [
         // 2º lugar
         if (top3.length > 1)
-          SizedBox(
-            width: 200,
-            child: _buildPodiumItem(top3[1], 2, false),
-          ),
-        
+          SizedBox(width: 200, child: _buildPodiumItem(top3[1], 2, false)),
+
         const SizedBox(width: 16),
-        
+
         // 1º lugar (maior)
         if (top3.isNotEmpty)
-          SizedBox(
-            width: 240,
-            child: _buildPodiumItem(top3[0], 1, true),
-          ),
-        
+          SizedBox(width: 240, child: _buildPodiumItem(top3[0], 1, true)),
+
         const SizedBox(width: 16),
-        
+
         // 3º lugar
         if (top3.length > 2)
-          SizedBox(
-            width: 200,
-            child: _buildPodiumItem(top3[2], 3, false),
+          SizedBox(width: 200, child: _buildPodiumItem(top3[2], 3, false)),
+      ],
+    );
+  }
+
+  Widget _buildPodiumAtletismo(List<SellerRanking> top3) {
+    // Usa MediaQuery para responsividade
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calcula alturas responsivas
+    final podiumHeight = screenHeight * 0.30; // 30% da altura da tela
+    final column1Height = podiumHeight * 0.6; // 1º lugar
+    final column2Height = podiumHeight * 0.45; // 2º lugar
+    final column3Height = podiumHeight * 0.3; // 3º lugar
+
+    final avatarSize = screenWidth < 350 ? 32.0 : 40.0;
+    final emojiSize = screenWidth < 350 ? 14.0 : 18.0;
+    final numberSize = screenWidth < 350 ? 18.0 : 22.0;
+    final nameSize = screenWidth < 350 ? 10.0 : 11.0;
+    final pointsSize = screenWidth < 350 ? 9.0 : 10.0;
+
+    return Column(
+      children: [
+        // Nomes dos vendedores no topo - com padding responsivo
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth < 350 ? 4.0 : 8.0,
+            vertical: 4.0,
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 2º lugar (esquerda)
+              if (top3.length > 1)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        top3[1].name,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: nameSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${top3[1].totalPoints} pts',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: pointsSize,
+                          color: const Color(0xFFC0C0C0),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+              SizedBox(width: screenWidth < 350 ? 4 : 8),
+              // 1º lugar (centro)
+              if (top3.isNotEmpty)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        top3[0].name,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: nameSize + 1,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${top3[0].totalPoints} pts',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: pointsSize + 1,
+                          color: const Color(0xFFFFD700),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+              SizedBox(width: screenWidth < 350 ? 4 : 8),
+              // 3º lugar (direita)
+              if (top3.length > 2)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        top3[2].name,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: nameSize,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        '${top3[2].totalPoints} pts',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: pointsSize,
+                          color: const Color(0xFFCD7F32),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+            ],
+          ),
+        ),
+        SizedBox(height: screenWidth < 350 ? 6 : 8),
+        // Pódio com 3 alturas diferentes - Responsivo
+        SizedBox(
+          height: podiumHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 2º lugar
+              if (top3.length > 1)
+                Expanded(
+                  child: _buildPodiumColumnResponsive(
+                    seller: top3[1],
+                    position: 2,
+                    height: column2Height,
+                    avatarSize: avatarSize,
+                    emojiSize: emojiSize,
+                    numberSize: numberSize,
+                    podiumColor: const Color(0xFF3B82F6),
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+              SizedBox(width: screenWidth < 350 ? 4 : 8),
+              // 1º lugar
+              if (top3.isNotEmpty)
+                Expanded(
+                  child: _buildPodiumColumnResponsive(
+                    seller: top3[0],
+                    position: 1,
+                    height: column1Height,
+                    avatarSize: avatarSize,
+                    emojiSize: emojiSize,
+                    numberSize: numberSize,
+                    podiumColor: const Color(0xFF3B82F6),
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+              SizedBox(width: screenWidth < 350 ? 4 : 8),
+              // 3º lugar
+              if (top3.length > 2)
+                Expanded(
+                  child: _buildPodiumColumnResponsive(
+                    seller: top3[2],
+                    position: 3,
+                    height: column3Height,
+                    avatarSize: avatarSize,
+                    emojiSize: emojiSize,
+                    numberSize: numberSize,
+                    podiumColor: const Color(0xFF3B82F6),
+                  ),
+                )
+              else
+                const Expanded(child: SizedBox()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPodiumColumn({
+    required SellerRanking seller,
+    required int position,
+    required double height,
+    required Color podiumColor,
+  }) {
+    return Column(
+      children: [
+        // Avatar acima da coluna - reduzido
+        Container(
+          width: 40,
+          height: 40,
+          margin: const EdgeInsets.only(bottom: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                podiumColor.withOpacity(0.4),
+                podiumColor.withOpacity(0.2),
+              ],
+            ),
+            border: Border.all(color: podiumColor, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: podiumColor.withOpacity(0.4),
+                blurRadius: 8,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: seller.photoUrl != null
+                ? Image.network(
+                    seller.photoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        _buildDefaultAvatar(seller.name),
+                  )
+                : _buildDefaultAvatar(seller.name),
+          ),
+        ),
+        // Coluna do pódio
+        Container(
+          height: height,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [podiumColor, podiumColor.withOpacity(0.8)],
+            ),
+            border: Border.all(color: podiumColor, width: 2),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: podiumColor.withOpacity(0.3),
+                blurRadius: 15,
+                spreadRadius: 1,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                position == 1
+                    ? '🏆'
+                    : position == 2
+                    ? '🥈'
+                    : '🥉',
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$position',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPodiumColumnResponsive({
+    required SellerRanking seller,
+    required int position,
+    required double height,
+    required double avatarSize,
+    required double emojiSize,
+    required double numberSize,
+    required Color podiumColor,
+  }) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // Avatar acima da coluna - responsivo
+        Container(
+          width: avatarSize,
+          height: avatarSize,
+          margin: EdgeInsets.only(bottom: avatarSize * 0.1),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: LinearGradient(
+              colors: [
+                podiumColor.withOpacity(0.4),
+                podiumColor.withOpacity(0.2),
+              ],
+            ),
+            border: Border.all(color: podiumColor, width: avatarSize * 0.05),
+            boxShadow: [
+              BoxShadow(
+                color: podiumColor.withOpacity(0.4),
+                blurRadius: 6,
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: seller.photoUrl != null
+                ? Image.network(
+                    seller.photoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        _buildDefaultAvatar(seller.name),
+                  )
+                : _buildDefaultAvatar(seller.name),
+          ),
+        ),
+        // Coluna do pódio - responsiva
+        Container(
+          height: height,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [podiumColor, podiumColor.withOpacity(0.8)],
+            ),
+            border: Border.all(color: podiumColor, width: height * 0.03),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(height * 0.1),
+              topRight: Radius.circular(height * 0.1),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: podiumColor.withOpacity(0.3),
+                blurRadius: 12,
+                spreadRadius: 1,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                position == 1
+                    ? '🏆'
+                    : position == 2
+                    ? '🥈'
+                    : '🥉',
+                style: TextStyle(fontSize: emojiSize),
+              ),
+              SizedBox(height: height * 0.08),
+              Text(
+                '$position',
+                style: TextStyle(
+                  fontSize: numberSize,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -389,114 +885,144 @@ class _RankingPageState extends State<RankingPage> {
   /// Constrói um item individual do pódio (1º, 2º ou 3º lugar).
   Widget _buildPodiumItem(SellerRanking seller, int position, bool isFirst) {
     final isCurrentUser = seller.id == _currentUserId;
-    
+
     Color medalColor;
-    IconData medalIcon;
     double avatarSize;
-    
+    Color cardGradientStart;
+    Color cardGradientEnd;
+
     switch (position) {
       case 1:
         medalColor = const Color(0xFFFFD700); // Ouro
-        medalIcon = Icons.workspace_premium;
-        avatarSize = isFirst ? 80 : 70;
+        avatarSize = isFirst ? 90 : 70;
+        cardGradientStart = const Color(0xFFFFF8E1);
+        cardGradientEnd = const Color(0xFFFFE082);
         break;
       case 2:
         medalColor = const Color(0xFFC0C0C0); // Prata
-        medalIcon = Icons.workspace_premium;
-        avatarSize = 60;
+        avatarSize = 65;
+        cardGradientStart = Colors.white;
+        cardGradientEnd = const Color(0xFFF5F5F5);
         break;
       case 3:
         medalColor = const Color(0xFFCD7F32); // Bronze
-        medalIcon = Icons.workspace_premium;
-        avatarSize = 60;
+        avatarSize = 65;
+        cardGradientStart = const Color(0xFFFFF3E0);
+        cardGradientEnd = const Color(0xFFFFE0B2);
         break;
       default:
         medalColor = Colors.grey;
-        medalIcon = Icons.emoji_events;
         avatarSize = 50;
+        cardGradientStart = Colors.white;
+        cardGradientEnd = Colors.grey.shade50;
     }
 
     return Container(
-      padding: EdgeInsets.all(isFirst ? 20 : 16),
+      padding: EdgeInsets.all(isFirst ? 24 : 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: isCurrentUser 
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [cardGradientStart, cardGradientEnd],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: isCurrentUser
             ? Border.all(color: AppColors.primary, width: 2)
-            : null,
+            : Border.all(color: medalColor.withOpacity(0.2), width: 2),
         boxShadow: [
           BoxShadow(
-            color: isFirst 
-                ? medalColor.withOpacity(0.3)
-                : Colors.black.withOpacity(0.05),
-            blurRadius: isFirst ? 20 : 10,
-            offset: const Offset(0, 4),
+            color: medalColor.withOpacity(0.4),
+            blurRadius: isFirst ? 25 : 15,
+            offset: const Offset(0, 8),
           ),
+          if (isFirst)
+            BoxShadow(
+              color: medalColor.withOpacity(0.15),
+              blurRadius: 40,
+              offset: const Offset(0, 20),
+            ),
         ],
       ),
       child: Column(
         children: [
-          // Medalha
+          // Medalha com efeito
           Stack(
             alignment: Alignment.topCenter,
             children: [
-              // Avatar
+              // Avatar com brilho
               Container(
-                margin: const EdgeInsets.only(top: 20),
+                margin: const EdgeInsets.only(top: 24),
                 width: avatarSize,
                 height: avatarSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: medalColor, width: 3),
+                  gradient: LinearGradient(
+                    colors: [medalColor, medalColor.withOpacity(0.7)],
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: medalColor.withOpacity(0.3),
-                      blurRadius: 10,
+                      color: medalColor.withOpacity(0.5),
+                      blurRadius: 15,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
-                child: ClipOval(
-                  child: seller.photoUrl != null
-                      ? Image.network(
-                          seller.photoUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildDefaultAvatar(seller.name),
-                        )
-                      : _buildDefaultAvatar(seller.name),
+                child: Container(
+                  margin: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: seller.photoUrl != null
+                        ? Image.network(
+                            seller.photoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                _buildDefaultAvatar(seller.name),
+                          )
+                        : _buildDefaultAvatar(seller.name),
+                  ),
                 ),
               ),
-              // Medalha
+              // Medalha com ícone
               Container(
-                padding: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: medalColor,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: medalColor.withOpacity(0.5),
-                      blurRadius: 8,
+                      color: medalColor.withOpacity(0.6),
+                      blurRadius: 12,
+                      spreadRadius: 2,
                     ),
                   ],
                 ),
                 child: Text(
-                  '$position',
-                  style: TextStyle(
-                    fontSize: isFirst ? 16 : 14,
-                    fontWeight: FontWeight.bold,
-                    color: position == 1 ? Colors.black87 : Colors.white,
-                  ),
+                  position == 1
+                      ? '🏆'
+                      : position == 2
+                      ? '🥈'
+                      : '🥉',
+                  style: TextStyle(fontSize: isFirst ? 24 : 20),
                 ),
               ),
             ],
           ),
-          
-          SizedBox(height: isFirst ? 16 : 12),
-          
+
+          SizedBox(height: isFirst ? 20 : 16),
+
           // Nome
           Text(
             seller.name,
             style: TextStyle(
-              fontSize: isFirst ? 18 : 16,
+              fontSize: isFirst ? 20 : 17,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -504,45 +1030,48 @@ class _RankingPageState extends State<RankingPage> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          
+
           if (isCurrentUser)
             Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              margin: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
                 'Você',
                 style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.primary,
+                  fontSize: 11,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-          
-          const SizedBox(height: 8),
-          
-          // Pontos
+
+          const SizedBox(height: 12),
+
+          // Pontos com destaque
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [medalColor.withOpacity(0.2), medalColor.withOpacity(0.1)],
+                colors: [
+                  medalColor.withOpacity(0.3),
+                  medalColor.withOpacity(0.15),
+                ],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.stars, color: medalColor, size: 18),
-                const SizedBox(width: 4),
+                const Icon(Icons.star, color: Colors.amber, size: 18),
+                const SizedBox(width: 6),
                 Text(
-                  '${seller.totalPoints} pts',
+                  '${seller.totalPoints}',
                   style: TextStyle(
-                    fontSize: isFirst ? 16 : 14,
+                    fontSize: isFirst ? 18 : 16,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),
@@ -550,16 +1079,47 @@ class _RankingPageState extends State<RankingPage> {
               ],
             ),
           ),
-          
-          const SizedBox(height: 8),
-          
+
+          const SizedBox(height: 12),
+
+          // Taxa de conversão
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '${seller.conversionRate.toStringAsFixed(1)}% conversão',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.blue.shade700,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           // Estatísticas
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildMiniStat(Icons.people, '${seller.leadsCount}'),
-              const SizedBox(width: 12),
-              _buildMiniStat(Icons.check_circle, '${seller.leadsWon}'),
+              _buildTopThreeMiniStat(
+                '${seller.leadsCount}',
+                'Leads',
+                Icons.people,
+              ),
+              Container(
+                width: 1,
+                height: 30,
+                color: Colors.grey.withOpacity(0.2),
+              ),
+              _buildTopThreeMiniStat(
+                '${seller.leadsWon}',
+                'Ganhos',
+                Icons.check_circle,
+              ),
             ],
           ),
         ],
@@ -567,18 +1127,32 @@ class _RankingPageState extends State<RankingPage> {
     );
   }
 
-  /// Constrói uma estatística compacta (ícone + valor).
-  Widget _buildMiniStat(IconData icon, String value) {
-    return Row(
+  Widget _buildTopThreeMiniStat(String value, String label, IconData icon) {
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.grey.shade600),
-        const SizedBox(width: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: Colors.grey.shade600),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
         Text(
-          value,
+          label,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+            fontSize: 11,
+            color: Colors.grey.shade500,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -588,23 +1162,46 @@ class _RankingPageState extends State<RankingPage> {
   /// Constrói a lista de classificação (abaixo do pódio).
   Widget _buildRankingList() {
     // Pula os primeiros 3 (já mostrados no pódio)
-    final restOfList = _rankings.length > 3 ? _rankings.skip(3).toList() : <SellerRanking>[];
-    
+    final restOfList = _rankings.length > 3
+        ? _rankings.skip(3).toList()
+        : <SellerRanking>[];
+
     if (restOfList.isEmpty && _rankings.length <= 3) {
       // Mostra todos se tiver 3 ou menos
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Classificação Geral',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Classificação Geral',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
-          ...List.generate(_rankings.length, (i) => _buildRankingItem(_rankings[i])),
+          ...List.generate(
+            _rankings.length,
+            (i) => _buildRankingItem(_rankings[i]),
+          ),
         ],
       );
     }
@@ -612,12 +1209,30 @@ class _RankingPageState extends State<RankingPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Classificação Geral',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey.shade800,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 28,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Classificação Geral',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),
@@ -633,150 +1248,222 @@ class _RankingPageState extends State<RankingPage> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      padding: EdgeInsets.all(isMobile ? 14 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: isCurrentUser 
+        borderRadius: BorderRadius.circular(14),
+        border: isCurrentUser
             ? Border.all(color: AppColors.primary, width: 2)
-            : null,
+            : Border.all(color: Colors.grey.shade200, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          // Posição
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _getRankColor(seller.rank).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Center(
-              child: Text(
-                '${seller.rank}º',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: _getRankColor(seller.rank),
+          Row(
+            children: [
+              // Posição com ícone visual
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _getRankColor(seller.rank).withOpacity(0.2),
+                      _getRankColor(seller.rank).withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ),
-            ),
-          ),
-          
-          const SizedBox(width: 12),
-          
-          // Avatar
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isCurrentUser ? AppColors.primary : Colors.grey.shade300,
-                width: 2,
-              ),
-            ),
-            child: ClipOval(
-              child: seller.photoUrl != null
-                  ? Image.network(
-                      seller.photoUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildDefaultAvatar(seller.name),
-                    )
-                  : _buildDefaultAvatar(seller.name),
-            ),
-          ),
-          
-          const SizedBox(width: 12),
-          
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      seller.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    if (isCurrentUser) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Você',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${seller.rank}º',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: _getRankColor(seller.rank),
                         ),
                       ),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.people, size: 14, color: Colors.grey.shade500),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${seller.leadsCount} leads',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.check_circle, size: 14, color: Colors.green.shade400),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${seller.leadsWon} ganhos',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          // Pontos
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.stars, color: Colors.white, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  '${seller.totalPoints}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Avatar melhorado
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      _getRankColor(seller.rank).withOpacity(0.3),
+                      _getRankColor(seller.rank).withOpacity(0.1),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: isCurrentUser
+                        ? AppColors.primary
+                        : _getRankColor(seller.rank).withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: ClipOval(
+                  child: seller.photoUrl != null
+                      ? Image.network(
+                          seller.photoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultAvatar(seller.name),
+                        )
+                      : _buildDefaultAvatar(seller.name),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Info principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            seller.name,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (isCurrentUser) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Você',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.trending_up,
+                          size: 14,
+                          color: Colors.blue.shade400,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${seller.conversionRate.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.people,
+                          size: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${seller.leadsCount}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.check_circle,
+                          size: 14,
+                          color: Colors.green.shade400,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${seller.leadsWon}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Pontos em destaque
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _getRankColor(seller.rank).withOpacity(0.9),
+                      _getRankColor(seller.rank).withOpacity(0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${seller.totalPoints}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'pts',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -786,7 +1473,7 @@ class _RankingPageState extends State<RankingPage> {
   /// Constrói um avatar padrão com a inicial do nome.
   Widget _buildDefaultAvatar(String name) {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    
+
     return Container(
       color: AppColors.primary.withOpacity(0.1),
       child: Center(
