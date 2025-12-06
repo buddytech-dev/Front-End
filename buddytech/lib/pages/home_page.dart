@@ -12,6 +12,8 @@ import 'profile_page.dart';
 import 'seller_dashboard_page.dart';
 import 'missions_page.dart';
 
+/// Página inicial do Vendedor (Dashboard).
+/// Exibe a lista de leads, menu de navegação e informações do usuário.
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -55,12 +57,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Verifica se o usuário atual tem permissões de administrador
   void _checkAdminAccess() {
     setState(() {
       _isAdmin = _adminService.isCurrentUserAdmin();
     });
   }
 
+  /// Carrega a lista de clientes (leads) da API
   Future<void> _loadClients() async {
     setState(() {
       _isLoading = true;
@@ -160,6 +164,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Realiza o logout do usuário e redireciona para o login
   Future<void> logout(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
 
@@ -212,12 +217,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Constrói o menu lateral (Drawer) para navegação em dispositivos móveis.
   Widget _buildDrawer() {
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            // Header do drawer
+            // Cabeçalho do Drawer com Logo e Nome
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -252,7 +258,7 @@ class _HomePageState extends State<HomePage> {
 
             const SizedBox(height: 8),
 
-            // Menu items
+            // Itens de navegação do menu
             _buildDrawerItem('Home', Icons.home, 0),
             _buildDrawerItem('Dashboard', Icons.dashboard, 5),
             _buildDrawerItem('Histórico', Icons.history, 1),
@@ -260,7 +266,7 @@ class _HomePageState extends State<HomePage> {
             _buildDrawerItem('Missões', Icons.assignment, 3),
             _buildDrawerItem('Perfil', Icons.person, 4),
 
-            // Admin - só aparece se for admin
+            // Opção de Admin - visível apenas para administradores
             if (_isAdmin) ...[
               const Divider(),
               ListTile(
@@ -284,7 +290,7 @@ class _HomePageState extends State<HomePage> {
 
             const Spacer(),
 
-            // Logout
+            // Botão de Logout
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red.shade400),
               title: Text('Sair', style: TextStyle(color: Colors.red.shade400)),
@@ -300,6 +306,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Constrói um item individual do menu lateral.
   Widget _buildDrawerItem(String title, IconData icon, int index) {
     final isSelected = _selectedNavIndex == index;
 
@@ -324,6 +331,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Gerencia a navegação ao clicar em um item do menu.
   void _onNavTap(int index) {
     setState(() {
       _selectedNavIndex = index;
@@ -629,6 +637,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Constrói o conteúdo principal da página (Body).
+  /// Centraliza o conteúdo e aplica restrições de largura máxima.
   Widget _buildMainContent(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final horizontalPadding = Responsive.padding(context);
@@ -661,6 +671,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Constrói o cabeçalho de boas-vindas com o nome do usuário.
   Widget _buildWelcomeHeader() {
     return SizedBox(
       width: double.infinity,
@@ -690,6 +701,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  /// Constrói a lista de leads (clientes).
+  /// Gerencia estados de carregamento, erro e lista vazia.
   Widget _buildLeadsList() {
     if (_isLoading) {
       return const Center(

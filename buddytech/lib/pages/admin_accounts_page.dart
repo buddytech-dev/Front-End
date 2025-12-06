@@ -3,7 +3,8 @@ import '../config/app_colors.dart';
 import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
-/// Página de gerenciamento de contas (Admin)
+/// Página de Gerenciamento de Contas (Administrativo).
+/// Permite visualizar e gerenciar as contas de vendedores cadastradas no sistema.
 class AdminAccountsPage extends StatefulWidget {
   const AdminAccountsPage({super.key});
 
@@ -25,6 +26,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     _loadSellers();
   }
 
+  /// Carrega a lista de vendedores da API.
   Future<void> _loadSellers() async {
     setState(() {
       _isLoading = true;
@@ -83,6 +85,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
   }
 
+  /// Constrói o cabeçalho da página.
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
 
@@ -123,6 +126,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
   }
 
+  /// Constrói o estado de erro.
   Widget _buildErrorState() {
     return Center(
       child: Column(
@@ -146,6 +150,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
   }
 
+  /// Constrói o conteúdo principal (lista de contas).
   Widget _buildContent() {
     final padding = Responsive.padding(context);
 
@@ -189,6 +194,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
   }
 
+  /// Constrói o card de conta (wrapper para mobile/desktop).
   Widget _buildAccountCard(SellerDto seller) {
     final isMobile = Responsive.isMobile(context);
     final roleText = _getRoleText(seller.role);
@@ -211,7 +217,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
   }
 
-  /// Layout do card para mobile (vertical)
+  /// Constrói o conteúdo do card para mobile.
   Widget _buildMobileCardContent(SellerDto seller, String roleText, Color roleColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +358,7 @@ class _AdminAccountsPageState extends State<AdminAccountsPage> {
     );
   }
 
-  /// Layout do card para desktop (horizontal)
+  /// Constrói o conteúdo do card para desktop.
   Widget _buildDesktopCardContent(SellerDto seller, String roleText, Color roleColor) {
     return Row(
       children: [

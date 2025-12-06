@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/interaction_history.dart';
 
-/// Serviço para gerenciar histórico de interações localmente
+/// Serviço responsável pelo gerenciamento do histórico de interações.
+/// Utiliza SharedPreferences para persistência local dos dados.
 class InteractionHistoryService {
   static const String _storageKey = 'interaction_history';
   static const int _maxHistoryItems = 100; // Limite de itens salvos

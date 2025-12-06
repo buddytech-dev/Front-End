@@ -6,6 +6,8 @@ import '../config/app_colors.dart';
 import '../routes/routes.dart';
 import '../utils/responsive.dart';
 
+/// Página de Perfil do Usuário.
+/// Permite visualizar e editar informações pessoais, como foto e nome.
 class ProfilePage extends StatefulWidget {
   final bool embedded;
   const ProfilePage({super.key, this.embedded = false});
@@ -29,6 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _loadUserProfile();
   }
 
+  /// Carrega os dados do perfil do usuário atual do Supabase.
   Future<void> _loadUserProfile() async {
     setState(() => _isLoading = true);
 

@@ -6,6 +6,8 @@ import '../services/admin_service.dart';
 import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
+/// Página principal do Painel Administrativo.
+/// Exibe estatísticas gerais do sistema, gráficos de desempenho e acesso rápido a outras áreas administrativas.
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
 
@@ -30,6 +32,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     _loadData();
   }
 
+  /// Carrega todos os dados necessários para o dashboard:
+  /// - Estatísticas gerais (AdminService)
+  /// - Lista de vendedores (ApiService)
+  /// - Lista de leads (ApiService)
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
 
@@ -115,6 +121,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói a barra lateral de navegação (desktop).
   Widget _buildSidebar() {
     return Container(
       width: 240,
@@ -199,6 +206,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói um item da barra lateral.
   Widget _buildSidebarItem(
     IconData icon,
     String title,
@@ -227,6 +235,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói o cabeçalho da página.
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
 
@@ -372,6 +381,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói o menu lateral (drawer) para mobile.
   Widget _buildDrawer() {
     return Drawer(
       child: SafeArea(
@@ -431,6 +441,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói um item do menu lateral.
   Widget _buildDrawerItem(String title, IconData icon, int index) {
     final isSelected = _selectedNavIndex == index;
 
@@ -455,6 +466,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói a barra de navegação inferior (mobile).
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
@@ -485,6 +497,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  /// Constrói um item da barra de navegação inferior.
   Widget _buildBottomNavItem(IconData icon, String label, int index) {
     final isSelected = _selectedNavIndex == index;
 
@@ -544,6 +557,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
+  /// Constrói o conteúdo principal do dashboard.
+  ///
+  /// Organiza os cards de métricas, rankings e gráficos em um layout responsivo.
   Widget _buildContent() {
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.padding(context);
@@ -699,7 +715,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  /// Card: Top 5 Vendedores por Score
+  /// Constrói o card dos Top 5 Vendedores por Score.
   Widget _buildTopSellersCard() {
     // Ordena vendedores por pontos
     final topSellers = List<SellerDto>.from(_sellers)
@@ -830,7 +846,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  /// Card: Top 5 Vendedores por Atividade (leads)
+  /// Constrói o card dos Top 5 Vendedores por Atividade (quantidade de leads).
   Widget _buildTopSellersActivityCard() {
     // Conta leads por vendedor
     final leadsPerSeller = <String, int>{};
@@ -982,7 +998,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  /// Card de Métrica
+  /// Constrói um card de métrica individual (ex: Total de Leads).
   Widget _buildMetricCard({
     required String title,
     required String value,
@@ -1087,7 +1103,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  /// Card: Relatório de Atividade
+  /// Constrói o card de relatório de atividade (gráfico de barras).
   Widget _buildActivityReportCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1187,7 +1203,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  /// Card: Top Leads
+  /// Constrói o card dos Top Leads (por score).
   Widget _buildTopLeadsCard() {
     // Ordena leads por score
     final topLeads = List<LeadDto>.from(_leads)

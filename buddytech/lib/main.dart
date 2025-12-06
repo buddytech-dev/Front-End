@@ -8,6 +8,8 @@ import 'pages/login_page.dart';
 import 'pages/home_page.dart';
 import 'pages/admin_dashboard_page.dart';
 
+/// Ponto de entrada da aplicação BuddyTech.
+/// Inicializa o Flutter, carrega variáveis de ambiente e configura o Supabase.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,6 +25,8 @@ Future<void> main() async {
   runApp(const BuddyTechApp());
 }
 
+/// Widget raiz da aplicação.
+/// Configura o tema, rotas e define a página inicial baseada na autenticação.
 class BuddyTechApp extends StatelessWidget {
   const BuddyTechApp({super.key});
 
@@ -38,6 +42,8 @@ class BuddyTechApp extends StatelessWidget {
   }
 }
 
+/// Widget responsável por verificar o estado de autenticação do usuário.
+/// Redireciona para a página de Login ou para a Home/Admin dependendo do nível de acesso.
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 

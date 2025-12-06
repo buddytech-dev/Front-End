@@ -484,7 +484,8 @@ class ApiResponse<T> {
 /// Campos do GET /api/Lead:
 /// leadId, title, status, companyName, sellerName, currentScore,
 /// probabilityOfClosing, priority, nextStepSuggestion, suggestedContactType,
-/// interactionsCount, expectedCloseDate
+/// DTO para Lead (Cliente Potencial).
+/// Representa os dados de um lead retornados pela API, incluindo informações da empresa e análise da IA.
 class LeadDto {
   final String id;
   final String? title;

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
-/// Modelo de dados do Cliente/Lead
-/// Preparado para receber dados de API/Supabase
+/// Modelo de dados do Cliente/Lead.
+/// Utilizado na interface para exibir informações do cliente.
+/// Pode ser instanciado a partir de um JSON ou de um LeadDto da API.
 class ClientModel {
   final String id;
   final int rank;
@@ -150,7 +151,8 @@ class ClientModel {
     );
   }
 
-  /// Factory para criar a partir de LeadDto da API
+  /// Cria uma instância de ClientModel a partir de um LeadDto da API.
+  /// Realiza a conversão de dados e gera valores padrão para campos visuais (cor, ícone).
   factory ClientModel.fromLeadDto(LeadDto lead) {
     // Gera cor baseada no título da lead (para variedade visual)
     final colors = ['3B82F6', 'EF4444', '10B981', 'F59E0B', '8B5CF6', 'EC4899'];

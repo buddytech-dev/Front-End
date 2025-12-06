@@ -3,6 +3,8 @@ import '../config/app_colors.dart';
 import '../services/api_service.dart';
 import '../utils/responsive.dart';
 
+/// Página de Gestão de Usuários (Administrativo).
+/// Permite visualizar, criar e editar usuários (Vendedores, Gerentes, Admins) do sistema.
 class AdminUsersPage extends StatefulWidget {
   const AdminUsersPage({super.key});
 
@@ -23,6 +25,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     _loadUsers();
   }
 
+  /// Carrega a lista de todos os usuários cadastrados via API.
   Future<void> _loadUsers() async {
     setState(() {
       _isLoading = true;
@@ -95,6 +98,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o cabeçalho da página.
   Widget _buildHeader() {
     final isMobile = Responsive.isMobile(context);
 
@@ -139,6 +143,9 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o conteúdo principal da página.
+  ///
+  /// Exibe estatísticas e a lista de usuários.
   Widget _buildContent() {
     final isMobile = Responsive.isMobile(context);
     final padding = Responsive.padding(context);
@@ -236,6 +243,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o estado vazio (sem usuários).
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
@@ -275,6 +283,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o card de usuário (wrapper para mobile/desktop).
   Widget _buildUserCard(SellerDto user) {
     final isMobile = Responsive.isMobile(context);
 
@@ -296,6 +305,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o card de usuário para mobile.
   Widget _buildMobileUserCard(SellerDto user) {
     final userName = user.name ?? 'Sem nome';
     final userEmail = user.email ?? '';
@@ -381,6 +391,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o card de usuário para desktop.
   Widget _buildDesktopUserCard(SellerDto user) {
     final userName = user.name ?? 'Sem nome';
     final userEmail = user.email ?? '';
@@ -472,6 +483,7 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
     );
   }
 
+  /// Constrói o badge de função (Admin, Vendedor, etc.).
   Widget _buildRoleBadge(int? role) {
     final roleName = _getRoleName(role);
     final roleColor = _getRoleColor(role);

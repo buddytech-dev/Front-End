@@ -5,6 +5,8 @@ import '../config/app_colors.dart';
 import '../routes/routes.dart';
 import '../utils/responsive.dart';
 
+/// Página de Recuperação de Senha.
+/// Permite que o usuário solicite um link de redefinição de senha por e-mail.
 class RecoverPasswordPage extends StatefulWidget {
   const RecoverPasswordPage({super.key});
 
@@ -16,6 +18,7 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
   final emailController = TextEditingController();
   bool loading = false;
 
+  /// Envia o link de redefinição de senha para o e-mail informado.
   Future<void> sendResetLink() async {
     final email = emailController.text.trim();
 
