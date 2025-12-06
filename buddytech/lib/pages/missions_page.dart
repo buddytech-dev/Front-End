@@ -5,6 +5,22 @@ import '../services/mission_service.dart';
 import '../utils/responsive.dart';
 import 'package:intl/intl.dart';
 
+class Achievement {
+  final String id;
+  final String title;
+  final String description;
+  final IconData icon;
+  final int requiredCount;
+
+  Achievement({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.requiredCount,
+  });
+}
+
 class MissionsPage extends StatefulWidget {
   final bool embedded;
   const MissionsPage({super.key, this.embedded = false});
@@ -19,6 +35,38 @@ class _MissionsPageState extends State<MissionsPage> {
   List<String> _completedMissions = [];
   int _totalPoints = 0;
   bool _isLoading = true;
+
+  // Conquistas disponíveis
+  final List<Achievement> _achievements = [
+    Achievement(
+      id: 'first_mission',
+      title: 'Primeira Missão',
+      description: 'Complete sua primeira missão',
+      icon: Icons.star,
+      requiredCount: 1,
+    ),
+    Achievement(
+      id: 'five_missions',
+      title: 'Missões Completadas',
+      description: 'Complete 5 missões',
+      icon: Icons.local_fire_department,
+      requiredCount: 5,
+    ),
+    Achievement(
+      id: 'fifty_points',
+      title: 'Coletor de Pontos',
+      description: 'Ganhe 50 pontos',
+      icon: Icons.diamond,
+      requiredCount: 50,
+    ),
+    Achievement(
+      id: 'ten_missions',
+      title: 'Mestre das Missões',
+      description: 'Complete 10 missões',
+      icon: Icons.military_tech,
+      requiredCount: 10,
+    ),
+  ];
 
   @override
   void initState() {
@@ -77,6 +125,19 @@ class _MissionsPageState extends State<MissionsPage> {
 
   List<Mission> get _completedMissionsList =>
       _missions.where((m) => _completedMissions.contains(m.id)).toList();
+
+  bool _isAchievementUnlocked(Achievement achievement) {
+    if (achievement.id == 'first_mission') {
+      return _completedMissions.isNotEmpty;
+    } else if (achievement.id == 'five_missions') {
+      return _completedMissions.length >= 5;
+    } else if (achievement.id == 'fifty_points') {
+      return _totalPoints >= 50;
+    } else if (achievement.id == 'ten_missions') {
+      return _completedMissions.length >= 10;
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -310,6 +371,19 @@ class _MissionsPageState extends State<MissionsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Seção de Conquistas
+              Text(
+                'Conquistas',
+                style: TextStyle(
+                  fontSize: Responsive.fontSize(context, base: 18),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildAchievementsSection(isMobile),
+              const SizedBox(height: 32),
+
               // Missões ativas
               if (_activeMissions.isNotEmpty) ...[
                 Text(
@@ -1031,5 +1105,94 @@ class _MissionsPageState extends State<MissionsPage> {
       default:
         return Icons.assignment;
     }
+  }
+
+  Widget _buildAchievementsSection(bool isMobile) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _achievements.map((achievement) {
+          final isUnlocked = _isAchievementUnlocked(achievement);
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: _buildAchievementCard(achievement, isUnlocked),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildAchievementCard(Achievement achievement, bool isUnlocked) {
+    return Container(
+      width: 100,
+      height: 120,
+      decoration: BoxDecoration(
+        color: isUnlocked
+            ? Colors.amber.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isUnlocked ? Colors.amber : Colors.grey.shade300,
+          width: 2,
+        ),
+      ),
+      child: Stack(
+        children: [
+          // Conteúdo
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  achievement.icon,
+                  size: 32,
+                  color: isUnlocked ? Colors.amber : Colors.grey.shade400,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  achievement.title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isUnlocked ? Colors.black87 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Cadeado ou check
+          if (!isUnlocked)
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock, size: 12, color: Colors.white),
+              ),
+            )
+          else
+            Positioned(
+              right: 4,
+              top: 4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.amber,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, size: 12, color: Colors.white),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

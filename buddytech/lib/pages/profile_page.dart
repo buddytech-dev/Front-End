@@ -186,6 +186,16 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: () => Navigator.pop(context),
             ),
             SizedBox(width: isMobile ? 8 : 16),
+            // Logo - apenas desktop
+            if (!isMobile)
+              Image.asset(
+                'assets/logo.png',
+                height: 32,
+                width: 32,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.business, color: Colors.white, size: 32),
+              ),
+            SizedBox(width: isMobile ? 8 : 16),
             Text(
               'Perfil',
               style: TextStyle(
@@ -195,15 +205,36 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             const Spacer(),
-            // Indicador online
-            Container(
-              width: isMobile ? 10 : 12,
-              height: isMobile ? 10 : 12,
-              decoration: const BoxDecoration(
-                color: Colors.greenAccent,
-                shape: BoxShape.circle,
+            // nav.png - mobile, Foto de perfil - desktop
+            if (isMobile)
+              Image.asset(
+                'assets/nav.png',
+                height: 32,
+                width: 32,
+                errorBuilder: (_, __, ___) =>
+                    const Icon(Icons.business, color: Colors.white, size: 32),
+              )
+            else
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: ClipOval(
+                  child: _profileImageBytes != null
+                      ? Image.memory(_profileImageBytes!, fit: BoxFit.cover)
+                      : _profileImageUrl != null
+                      ? Image.network(
+                          _profileImageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultAvatarWhite(),
+                        )
+                      : _buildDefaultAvatarWhite(),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -259,7 +290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   const SizedBox(width: 48),
-                  // Coluna direita - Botões
+                  // Coluna direita - Ações
                   Expanded(
                     flex: 1,
                     child: Column(
@@ -274,7 +305,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 12),
                         _buildActionButton(
                           'Leads Atendidos',
-                          Icons.people_outline,
+                          Icons.people,
                           onTap: _showAttendedLeads,
                         ),
                         const SizedBox(height: 12),
@@ -286,7 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 12),
                         _buildActionButton(
                           'Configurações',
-                          Icons.settings_outlined,
+                          Icons.settings,
                           onTap: _showSettings,
                         ),
                         const SizedBox(height: 24),
@@ -329,38 +360,79 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildMobileActions() {
     return Column(
       children: [
-        _buildActionButton(
-          'Estatísticas',
-          Icons.bar_chart,
-          onTap: _showStatistics,
-        ),
-        const SizedBox(height: 12),
-        _buildActionButton(
-          'Leads Atendidos',
-          Icons.people_outline,
-          onTap: _showAttendedLeads,
-        ),
-        const SizedBox(height: 12),
-        _buildActionButton(
-          'Taxa de conversão',
+        _buildStatCard(
+          'Total de Vendas',
+          'R\$ 12.500,00',
+          Colors.green,
           Icons.trending_up,
-          onTap: _showConversionRate,
         ),
         const SizedBox(height: 12),
-        _buildActionButton(
-          'Configurações',
-          Icons.settings_outlined,
-          onTap: _showSettings,
-        ),
+        _buildStatCard('Taxa de Conversão', '45%', Colors.blue, Icons.percent),
         const SizedBox(height: 12),
-        _buildActionButton(
-          'Dashboard',
-          Icons.dashboard,
-          onTap: _navigateToDashboard,
+        _buildStatCard('Leads Atendidos', '89', Colors.orange, Icons.people),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          'Ticket Médio',
+          'R\$ 278,00',
+          Colors.purple,
+          Icons.attach_money,
         ),
         const SizedBox(height: 20),
         _buildLogoutButton(),
       ],
+    );
+  }
+
+  Widget _buildStatCard(
+    String label,
+    String value,
+    Color color,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -444,6 +516,13 @@ class _ProfilePageState extends State<ProfilePage> {
         size: size * 0.5,
         color: Colors.grey.shade400,
       ),
+    );
+  }
+
+  Widget _buildDefaultAvatarWhite() {
+    return Container(
+      color: Colors.grey.shade300,
+      child: const Icon(Icons.person_outline, size: 20, color: Colors.white),
     );
   }
 
@@ -546,13 +625,28 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatCard('Total de vendas', 'R\$ 12.500,00', Colors.green),
+              _buildStatCard(
+                'Total de vendas',
+                'R\$ 12.500,00',
+                Colors.green,
+                Icons.trending_up,
+              ),
               const SizedBox(height: 16),
-              _buildStatCard('Conversões', '45%', Colors.blue),
+              _buildStatCard('Conversões', '45%', Colors.blue, Icons.percent),
               const SizedBox(height: 16),
-              _buildStatCard('Ticket médio', 'R\$ 278,00', Colors.orange),
+              _buildStatCard(
+                'Ticket médio',
+                'R\$ 278,00',
+                Colors.orange,
+                Icons.attach_money,
+              ),
               const SizedBox(height: 16),
-              _buildStatCard('Clientes ativos', '89', Colors.purple),
+              _buildStatCard(
+                'Clientes ativos',
+                '89',
+                Colors.purple,
+                Icons.people,
+              ),
             ],
           ),
         ),
@@ -779,41 +873,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildStatCard(String label, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-          Icon(Icons.trending_up, color: color, size: 32),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLeadItem(
     String name,
     String status,
@@ -907,29 +966,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
     );
-  }
-
-  void _navigateToDashboard() {
-    if (widget.embedded) {
-      // Se está embedded, tenta encontrar o state da HomePage e mudar índice
-      try {
-        final homeState = context.findAncestorStateOfType<State>();
-        if (homeState != null) {
-          // Acessa a propriedade _selectedNavIndex via dynamic
-          final stateAsDynamic = homeState as dynamic;
-          if (stateAsDynamic._selectedNavIndex != null) {
-            homeState.setState(() {
-              stateAsDynamic._selectedNavIndex = 5; // Dashboard é índice 5
-            });
-          }
-        }
-      } catch (e) {
-        print('Erro ao navegar para dashboard: $e');
-      }
-    } else {
-      // Se não está embedded, navega via rota
-      Navigator.popUntil(context, (route) => route.isFirst);
-    }
   }
 
   void _showLogoutConfirmation() {

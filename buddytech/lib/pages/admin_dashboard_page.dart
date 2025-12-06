@@ -256,103 +256,116 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
 
             Expanded(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Dashboard',
                     style: TextStyle(
                       fontSize: Responsive.fontSize(
                         context,
-                        base: isMobile ? 20 : 24,
+                        base: isMobile ? 18 : 24,
                       ),
                       fontWeight: FontWeight.bold,
                       color: const Color(0xFF1E293B),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  // Toggle Me/Organization
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'Admin',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                  if (!isMobile)
+                    SizedBox(
+                      height: 32,
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 4),
+                          // Toggle Me/Organization
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Text(
+                                    'Admin',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  child: Text(
+                                    'Organização',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          child: Text(
-                            'Organização',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
 
-            // Indicador online
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
+            // Indicador online - ocultado no mobile
+            if (!isMobile)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Online',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.green.shade700,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(width: 6),
+                    Text(
+                      'Online',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -510,11 +523,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   void _onNavTap(int index) {
     switch (index) {
+      case 0:
+        // Dashboard - já está na página
+        setState(() => _selectedNavIndex = 0);
+        break;
       case 1:
-        Navigator.pushNamed(context, AppRoutes.adminAccounts);
+        // Vendedores
+        Navigator.pushNamed(context, AppRoutes.adminUsers);
         break;
       case 2:
+        // Leads
         Navigator.pushNamed(context, AppRoutes.adminLeads);
+        break;
+      case 3:
+        // Perfil
+        Navigator.pushNamed(context, AppRoutes.adminAccounts);
         break;
       default:
         setState(() => _selectedNavIndex = index);
@@ -714,12 +737,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Top 5 Vendedores por Score',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFFF59E0B),
+              Expanded(
+                child: Text(
+                  'Top 5 Vendedores',
+                  style: TextStyle(
+                    fontSize: Responsive.isMobile(context) ? 14 : 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFFF59E0B),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

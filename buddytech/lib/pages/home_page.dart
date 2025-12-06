@@ -29,7 +29,6 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isAdmin = false;
   String _userName = 'Usuário';
-  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -52,10 +51,6 @@ class _HomePageState extends State<HomePage> {
       } else if (user.email != null) {
         // Se não tiver nome, usa a parte do email antes do @
         setState(() => _userName = user.email!.split('@').first);
-      }
-      // Carrega a foto do avatar
-      if (metadata != null && metadata['avatar_url'] != null) {
-        setState(() => _profileImageUrl = metadata['avatar_url']);
       }
     }
   }
@@ -116,19 +111,14 @@ class _HomePageState extends State<HomePage> {
       body: Row(
         children: [
           // Sidebar para desktop
-          if (isDesktop)
-            SizedBox(
-              width: 280,
-              child: _buildDesktopSidebar(),
-            ),
-          
+          if (isDesktop) SizedBox(width: 280, child: _buildDesktopSidebar()),
+
           // Conteúdo principal
           Expanded(
             child: Column(
               children: [
                 // Navbar mobile/tablet
-                if (!isDesktop)
-                  _buildNavbar(context),
+                if (!isDesktop) _buildNavbar(context),
 
                 // CONTEÚDO PRINCIPAL
                 Expanded(
@@ -171,7 +161,7 @@ class _HomePageState extends State<HomePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Image.asset(
-                    'assets/Logo.png',
+                    'assets/nav.png',
                     height: 40,
                     width: 40,
                     errorBuilder: (_, __, ___) => const Icon(
@@ -357,7 +347,7 @@ class _HomePageState extends State<HomePage> {
                   _buildSidebarItem('Missões', Icons.assignment, 3),
                   _buildSidebarItem('Perfil', Icons.person, 4),
                   _buildSidebarItem('Dashboard', Icons.dashboard, 5),
-                  
+
                   if (_isAdmin) ...[
                     const Divider(color: Colors.white24, height: 24),
                     _buildSidebarAdminItem(),
@@ -454,63 +444,60 @@ class _HomePageState extends State<HomePage> {
           children: [
             // Mobile: Hambúrguer
             if (isMobile)
-              IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white, size: 28),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                tooltip: 'Menu',
-              ),
-
-            // Logo
-            if (isMobile)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Image.asset(
-                  'assets/nav.png',
-                  height: 32,
-                  width: 32,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 32,
-                    height: 32,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.business, color: Color(0xFF3B82F6)),
-                  ),
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white, size: 28),
+                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  tooltip: 'Menu',
+                  padding: EdgeInsets.zero,
                 ),
               ),
 
-            // Centered title with more padding
+            // Centered title - expande para ocupar o espaço do meio
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: Center(
+                  child: Text(
+                    _getPageTitle(_selectedNavIndex),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ),
+
+            // Logo na direita - mobile
             if (isMobile)
-              Expanded(
+              SizedBox(
+                width: 48,
+                height: 48,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: 4.0),
-                  child: Center(
-                    child: Text(
-                      _getPageTitle(_selectedNavIndex),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Image.asset(
+                    'assets/nav.png',
+                    height: 32,
+                    width: 32,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 32,
+                      height: 32,
+                      decoration: const BoxDecoration(
                         color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.business,
+                        color: Color(0xFF3B82F6),
                       ),
                     ),
                   ),
-                ),
-              ),
-
-            // Avatar right
-            if (isMobile)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: CircleAvatar(
-                  radius: 18,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                  backgroundImage: _profileImageUrl != null
-                      ? NetworkImage(_profileImageUrl!)
-                      : null,
-                  child: _profileImageUrl == null
-                      ? const Icon(Icons.person, color: Colors.white, size: 20)
-                      : null,
                 ),
               ),
           ],

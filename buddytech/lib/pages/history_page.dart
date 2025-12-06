@@ -364,10 +364,7 @@ class _HistoryPageState extends State<HistoryPage> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
         ],
@@ -403,10 +400,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
                 label: Text(
                   filter['label'] as String,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                 ),
                 onSelected: (_) {
                   setState(() => _selectedFilter = filter['value'] as String);
@@ -420,7 +414,9 @@ class _HistoryPageState extends State<HistoryPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
+                    color: isSelected
+                        ? AppColors.primary
+                        : Colors.grey.shade200,
                   ),
                 ),
               ),
@@ -490,11 +486,7 @@ class _HistoryPageState extends State<HistoryPage> {
               color: Colors.blue.shade50,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.history,
-              size: 64,
-              color: Colors.blue.shade300,
-            ),
+            child: Icon(Icons.history, size: 64, color: Colors.blue.shade300),
           ),
           const SizedBox(height: 24),
           Text(
@@ -590,7 +582,9 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
 
             // Itens do dia
-            ...entry.value.map((item) => _buildHistoryItem(item)),
+            ...entry.value.map(
+              (item) => _buildHistoryItemMobileRefactored(item),
+            ),
           ],
         );
       }).toList(),
@@ -682,7 +676,9 @@ class _HistoryPageState extends State<HistoryPage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: _getTypeColor(item.interactionType).withOpacity(0.15),
+                    color: _getTypeColor(
+                      item.interactionType,
+                    ).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -714,8 +710,9 @@ class _HistoryPageState extends State<HistoryPage> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: _getTypeColor(item.interactionType)
-                                  .withOpacity(0.15),
+                              color: _getTypeColor(
+                                item.interactionType,
+                              ).withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -787,10 +784,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 decoration: BoxDecoration(
                   color: Colors.purple.shade50,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.purple.shade100,
-                    width: 1,
-                  ),
+                  border: Border.all(color: Colors.purple.shade100, width: 1),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1105,228 +1099,6 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryItem(InteractionHistory item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header com tipo e hora
-          Row(
-            children: [
-              // Ícone do tipo
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _getTypeColor(item.interactionType).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  item.typeIcon,
-                  style: const TextStyle(fontSize: 22),
-                ),
-              ),
-              const SizedBox(width: 12),
-
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.leadName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getTypeColor(item.interactionType),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            item.typeLabel,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: Colors.grey.shade500,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat('HH:mm').format(item.date),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Score
-              if (item.scoreAfter != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade400, Colors.blue.shade600],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'Score',
-                        style: TextStyle(fontSize: 10, color: Colors.white70),
-                      ),
-                      Text(
-                        '${item.scoreAfter}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Conteúdo da interação
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              item.content,
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-          ),
-
-          // Sugestão da IA (se houver)
-          if (item.aiSuggestion != null && item.aiSuggestion!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple.shade50, Colors.blue.shade50],
-                ),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.purple.shade200),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.shade100,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      Icons.psychology,
-                      size: 16,
-                      color: Colors.purple.shade600,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sugestão da IA',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.purple.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.aiSuggestion!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.purple.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // Probabilidade (se houver)
-          if (item.probabilityAfter != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(Icons.trending_up, size: 16, color: Colors.green.shade500),
-                const SizedBox(width: 6),
-                Text(
-                  'Probabilidade de fechamento: ',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-                Text(
-                  '${(item.probabilityAfter! * 100).toInt()}%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.green.shade600,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
       ),
     );
   }
